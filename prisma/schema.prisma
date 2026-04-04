@@ -1,0 +1,168 @@
+// FlashDealAI — PostgreSQL schema
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum ProductSource {
+  AMAZON_PA_API
+  BRAND_OFFICIAL
+  SCRAPED_RETAILER
+  MANUAL
+  CSV_IMPORT
+}
+
+enum IngestionStatus {
+  PENDING
+  RUNNING
+  SUCCESS
+  FAILED
+}
+
+enum AiTaskStatus {
+  PENDING
+  RUNNING
+  SUCCESS
+  FAILED
+}
+
+enum AiTaskType {
+  NORMALIZE_TITLE
+  SUMMARIZE
+  SCORE_DEAL
+  CLASSIFY
+  GENERATE_SEO
+  REASON_TO_BUY
+  SEARCH_QA
+}
+
+model Product {
+  id                String         @id @default(cuid())
+  source            ProductSource
+  externalId        String         @map("external_id")
+  title             String
+  normalizedTitle   String?        @map("normalized_title")
+  brand             String?
+  category          String?
+  subcategory       String?
+  imageUrl          String?        @map("image_url")
+  productUrl        String         @map("product_url")
+  affiliateUrl      String?        @map("affiliate_url")
+  currency          String         @default("USD")
+  currentPrice      Decimal        @map("current_price") @db.Decimal(12, 2)
+  originalPrice     Decimal?       @map("original_price") @db.Decimal(12, 2)
+  discountPercent   Int?           @map("discount_percent")
+  aiScore           Int?           @map("ai_score")
+  aiSummary         String?        @map("ai_summary") @db.Text
+  aiReasonToBuy     String?        @map("ai_reason_to_buy") @db.Text
+  availability      String?
+  rating            Decimal?       @db.Decimal(3, 2)
+  reviewCount       Int?           @map("review_count")
+  tags              String[]
+  slug              String         @unique
+  seoTitle          String?        @map("seo_title")
+  seoDescription    String?        @map("seo_description") @db.Text
+  published         Boolean        @default(false)
+  lastSeenAt        DateTime       @map("last_seen_at")
+  createdAt         DateTime       @default(now()) @map("created_at")
+  updatedAt         DateTime       @updatedAt @map("updated_at")
+
+  priceHistory      PriceHistory[]
+  collections       ProductCollectionMap[]
+  aiTasks           AiTask[]
+
+  @@unique([source, externalId])
+  @@index([brand])
+  @@index([category])
+  @@index([discountPercent])
+  @@index([aiScore])
+  @@index([published, lastSeenAt])
+  @@map("products")
+}
+
+model PriceHistory {
+  id         String   @id @default(cuid())
+  productId  String   @map("product_id")
+  price      Decimal  @db.Decimal(12, 2)
+  capturedAt DateTime @default(now()) @map("captured_at")
+
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@index([productId, capturedAt])
+  @@map("price_history")
+}
+
+model DealCollection {
+  id          String   @id @default(cuid())
+  name        String
+  slug        String   @unique
+  description String?  @db.Text
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  products ProductCollectionMap[]
+
+  @@map("deal_collections")
+}
+
+model ProductCollectionMap {
+  productId    String @map("product_id")
+  collectionId String @map("collection_id")
+
+  product    Product        @relation(fields: [productId], references: [id], onDelete: Cascade)
+  collection DealCollection @relation(fields: [collectionId], references: [id], onDelete: Cascade)
+
+  @@id([productId, collectionId])
+  @@map("product_collection_map")
+}
+
+model IngestionJob {
+  id         String          @id @default(cuid())
+  source     ProductSource
+  status     IngestionStatus @default(PENDING)
+  startedAt  DateTime?       @map("started_at")
+  finishedAt DateTime?       @map("finished_at")
+  logs       String?         @db.Text
+
+  @@index([status, startedAt])
+  @@map("ingestion_jobs")
+}
+
+model AiTask {
+  id         String       @id @default(cuid())
+  productId  String?      @map("product_id")
+  taskType   AiTaskType   @map("task_type")
+  inputJson  Json         @map("input_json")
+  outputJson Json?        @map("output_json")
+  status     AiTaskStatus @default(PENDING)
+  createdAt  DateTime     @default(now()) @map("created_at")
+
+  product Product? @relation(fields: [productId], references: [id], onDelete: SetNull)
+
+  @@index([productId, taskType])
+  @@map("ai_tasks")
+}
+
+model SearchQuery {
+  id          String   @id @default(cuid())
+  query       String
+  resultCount Int      @map("result_count")
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  @@index([createdAt])
+  @@map("search_queries")
+}
+
+model AdminUser {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  passwordHash String   @map("password_hash")
+  name         String?
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  @@map("admin_users")
+}
