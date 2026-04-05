@@ -52,9 +52,11 @@ export default async function HomePage() {
   );
   const engagementMap = await getEngagementStatsForProductIds([...railIds]);
 
-  const categories = getCategories();
-  const brands = getBrands();
-  const stores = getStores();
+  const [categories, brands, stores] = await Promise.all([
+    getCategories(),
+    getBrands(),
+    getStores(),
+  ]);
 
   return (
     <div>

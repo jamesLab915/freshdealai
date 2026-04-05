@@ -8,18 +8,21 @@ import { dealMatchesStore } from "@/lib/store-utils";
 type Props = { params: Promise<{ slug: string }> };
 
 export async function generateStaticParams() {
-  return getStores().map((s) => ({ slug: s.slug }));
+  const stores = await getStores();
+  return stores.map((s) => ({ slug: s.slug }));
 }
 
 export async function generateMetadata({ params }: Props) {
   const { slug } = await params;
-  const s = getStores().find((x) => x.slug === slug);
+  const stores = await getStores();
+  const s = stores.find((x) => x.slug === slug);
   return { title: s ? `${s.name} deals` : "Store" };
 }
 
 export default async function StoreDetailPage({ params }: Props) {
   const { slug } = await params;
-  const store = getStores().find((s) => s.slug === slug);
+  const stores = await getStores();
+  const store = stores.find((s) => s.slug === slug);
   if (!store) notFound();
 
   const { deals: all } = await getDeals({});

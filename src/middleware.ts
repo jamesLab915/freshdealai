@@ -11,10 +11,14 @@ export function middleware(request: NextRequest) {
 
   if (!user || !pass) {
     return new NextResponse(
-      "Admin access is disabled until ADMIN_USERNAME and ADMIN_PASSWORD are set.",
+      "FlashDealAI admin is not configured: set ADMIN_USERNAME and ADMIN_PASSWORD in your environment (e.g. .env), restart the server, then sign in with HTTP Basic auth when your browser prompts.\n",
       {
-        status: 403,
-        headers: { "Content-Type": "text/plain; charset=utf-8" },
+        status: 401,
+        headers: {
+          "Content-Type": "text/plain; charset=utf-8",
+          "WWW-Authenticate":
+            'Basic realm="FlashDealAI Admin - configure ADMIN_USERNAME and ADMIN_PASSWORD"',
+        },
       },
     );
   }

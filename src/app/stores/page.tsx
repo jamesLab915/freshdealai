@@ -8,8 +8,8 @@ export const metadata = {
   description: "Deals aggregated from major US retailers and brand DTC sites.",
 };
 
-export default function StoresPage() {
-  const stores = getStores();
+export default async function StoresPage() {
+  const stores = await getStores();
 
   return (
     <div className="mx-auto max-w-6xl px-4 py-10 sm:px-6">

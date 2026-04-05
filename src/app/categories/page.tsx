@@ -8,8 +8,8 @@ export const metadata = {
   description: "Browse deal categories — electronics, home, fashion, and more.",
 };
 
-export default function CategoriesPage() {
-  const categories = getCategories();
+export default async function CategoriesPage() {
+  const categories = await getCategories();
 
   return (
     <div className="mx-auto max-w-6xl px-4 py-10 sm:px-6">

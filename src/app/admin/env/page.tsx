@@ -9,6 +9,21 @@ function flag(ok: boolean): string {
   return ok ? "configured" : "missing";
 }
 
+function siteUrlSourceLabel(source: string): string {
+  switch (source) {
+    case "explicit":
+      return "NEXT_PUBLIC_SITE_URL";
+    case "vercel_deployment":
+      return "VERCEL_URL (preview / deployment host)";
+    case "dev_default":
+      return "dev default (localhost:3010)";
+    case "implicit_local":
+      return "implicit localhost:3010 (set NEXT_PUBLIC_SITE_URL for public URL)";
+    default:
+      return source;
+  }
+}
+
 export default function AdminEnvPage() {
   const e = getEnvStatus();
 
@@ -34,8 +49,11 @@ export default function AdminEnvPage() {
       </Card>
 
       <p className="mt-6 text-xs text-neutral-500">
-        Resolved public site URL for builds:{" "}
+        Resolved public site URL:{" "}
         <span className="font-mono text-neutral-700">{e.siteUrl}</span>
+        <span className="mt-2 block text-neutral-500">
+          Source: {siteUrlSourceLabel(e.siteUrlSource)}
+        </span>
       </p>
     </div>
   );

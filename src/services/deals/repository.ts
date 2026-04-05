@@ -158,6 +158,9 @@ function storeDomainHint(slug: string): string | null {
   return m[slug] ?? null;
 }
 
+/** Log once per process when deal loads use mock due to missing DATABASE_URL. */
+let warnedMissingDatabaseUrl = false;
+
 async function fromDb(filters: DealFilters): Promise<DealProduct[] | null> {
   if (!prisma) return null;
 
@@ -175,8 +178,17 @@ async function fromDb(filters: DealFilters): Promise<DealProduct[] | null> {
     }
   }
   if (filters.category) {
-    const cat = mockCategories.find((c) => c.slug === filters.category);
-    if (cat) where.category = { equals: cat.name, mode: "insensitive" };
+    const slug = filters.category;
+    const catRow = await prisma.category.findFirst({
+      where: { slug },
+    });
+    if (catRow) {
+      where.category = { equals: catRow.name, mode: "insensitive" };
+    } else {
+      const cat = mockCategories.find((c) => c.slug === slug);
+      if (!cat) return [];
+      where.category = { equals: cat.name, mode: "insensitive" };
+    }
   }
   if (filters.minDiscount != null || filters.maxDiscount != null) {
     where.discountPercent = {};
@@ -248,8 +260,17 @@ export async function loadDeals(
     if (db) {
       return { deals: filterPrimaryShelfDeals(db), source: "database" };
     }
-  } catch {
-    /* fallback */
+  } catch (err) {
+    console.warn(
+      "[deals] loadDeals: source=mock — database query failed:",
+      err instanceof Error ? err.message : err
+    );
+  }
+  if (!prisma && !warnedMissingDatabaseUrl) {
+    warnedMissingDatabaseUrl = true;
+    console.warn(
+      "[deals] loadDeals: source=mock — DATABASE_URL is not set (using mock catalog)"
+    );
   }
   return {
     deals: filterPrimaryShelfDeals(

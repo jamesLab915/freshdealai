@@ -38,22 +38,31 @@ export function formatDealAge(iso: string): string {
   return `${days}d ago`;
 }
 
-export function dealMatchesStore(deal: DealProduct, storeSlug: string): boolean {
+const STORE_SLUG_HOSTS: Record<string, string[]> = {
+  amazon: ["amazon.com", "amzn.com", "a.co"],
+  "best-buy": ["bestbuy.com"],
+  target: ["target.com"],
+  walmart: ["walmart.com"],
+  "nike-store": ["nike.com"],
+  rei: ["rei.com"],
+};
+
+/** URL-only check — same host rules as `dealMatchesStore`. */
+export function productUrlMatchesStoreSlug(
+  productUrl: string,
+  storeSlug: string
+): boolean {
   let host: string;
   try {
-    host = new URL(deal.productUrl).hostname.replace(/^www\./, "");
+    host = new URL(productUrl).hostname.replace(/^www\./, "");
   } catch {
     return false;
   }
-  const map: Record<string, string[]> = {
-    amazon: ["amazon.com", "amzn.com", "a.co"],
-    "best-buy": ["bestbuy.com"],
-    target: ["target.com"],
-    walmart: ["walmart.com"],
-    "nike-store": ["nike.com"],
-    rei: ["rei.com"],
-  };
-  const hosts = map[storeSlug];
+  const hosts = STORE_SLUG_HOSTS[storeSlug];
   if (!hosts) return false;
   return hosts.some((h) => host === h || host.endsWith(`.${h}`));
+}
+
+export function dealMatchesStore(deal: DealProduct, storeSlug: string): boolean {
+  return productUrlMatchesStoreSlug(deal.productUrl, storeSlug);
 }

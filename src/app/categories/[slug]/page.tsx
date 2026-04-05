@@ -7,12 +7,14 @@ import { getCategories, getDeals } from "@/services/deals";
 type Props = { params: Promise<{ slug: string }> };
 
 export async function generateStaticParams() {
-  return getCategories().map((c) => ({ slug: c.slug }));
+  const categories = await getCategories();
+  return categories.map((c) => ({ slug: c.slug }));
 }
 
 export async function generateMetadata({ params }: Props) {
   const { slug } = await params;
-  const cat = getCategories().find((c) => c.slug === slug);
+  const categories = await getCategories();
+  const cat = categories.find((c) => c.slug === slug);
   if (!cat) return { title: "Category" };
   return {
     title: `${cat.name} deals`,
@@ -22,7 +24,8 @@ export async function generateMetadata({ params }: Props) {
 
 export default async function CategoryDetailPage({ params }: Props) {
   const { slug } = await params;
-  const cat = getCategories().find((c) => c.slug === slug);
+  const categories = await getCategories();
+  const cat = categories.find((c) => c.slug === slug);
   if (!cat) notFound();
 
   const { deals } = await getDeals({ category: slug });

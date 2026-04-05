@@ -11,8 +11,10 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const base = getSiteUrl();
   const now = new Date();
 
-  const categories = getCategories();
-  const brands = getBrands();
+  const [categories, brands] = await Promise.all([
+    getCategories(),
+    getBrands(),
+  ]);
   const categoryBrowse = categories.map((c) => `/deals/category/${c.slug}`);
   const bestDealsCats = categories.map((c) => `/best-deals/${c.slug}`);
   const top10Cats = categories.map((c) => `/top-10-best-deals/${c.slug}`);
@@ -51,8 +53,10 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     "/amazon-disclosure",
   ];
 
-  const { deals } = await getDeals({});
-  const stores = getStores();
+  const [{ deals }, stores] = await Promise.all([
+    getDeals({}),
+    getStores(),
+  ]);
 
   const entries: MetadataRoute.Sitemap = [
     ...staticPaths.map((path) => ({

@@ -4,8 +4,10 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
+    "dev:3010": "PORT=3010 next dev",
     "build": "next build",
     "start": "next start",
+    "start:3010": "PORT=3010 next start",
     "lint": "eslint",
     "typecheck": "tsc --noEmit",
     "postinstall": "prisma generate",

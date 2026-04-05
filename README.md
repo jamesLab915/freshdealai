@@ -17,10 +17,10 @@ cd flashdeal-ai
 cp .env.example .env
 # Set DATABASE_URL to your Neon connection string for real data (recommended for development and ops).
 npm install
-npm run dev
+npm run dev:3010
 ```
 
-Open [http://localhost:3000](http://localhost:3000). For **`/admin`**, use the Basic Auth credentials from `.env` (`ADMIN_USERNAME` / `ADMIN_PASSWORD`); if they are unset, admin routes return **403** until you configure them.
+Open [http://127.0.0.1:3010](http://127.0.0.1:3010) (or `npm run dev` on port 3000). Production-like checks: `npm run build` then `npm run start:3010`. For **`/admin`**, set `ADMIN_USERNAME` / `ADMIN_PASSWORD` in `.env`; if unset, the middleware returns **401** with instructions instead of a silent **403**.
 
 **Database:** Local and Vercel should both use a **Neon** (or other hosted Postgres) `DATABASE_URL`. The app falls back to **mock deals** only when `DATABASE_URL` is missing or the DB is unreachable — see `AGENTS.md` for team rules on always using Neon for real work.
 
@@ -30,7 +30,7 @@ Open [http://localhost:3000](http://localhost:3000). For **`/admin`**, use the B
 |----------|----------|---------|
 | `DATABASE_URL` | Yes for real catalog | **Neon** PostgreSQL URL for Prisma. Without it, listings use **mock deals** (`src/lib/mock-deals.ts`). |
 | `OPENAI_API_KEY` | No | AI scoring, summaries, SEO. Without it, **deterministic fallbacks** run (`src/services/ai/*`). |
-| `NEXT_PUBLIC_SITE_URL` | Recommended in prod | Canonical URLs, OG, sitemap, `robots.txt`. Defaults to `http://localhost:3000` if unset. |
+| `NEXT_PUBLIC_SITE_URL` | Strongly recommended in prod | Canonical URLs, OG, sitemap, `robots.txt`. In **development**, if unset, defaults to `http://localhost:3010`. On **Vercel**, if unset, `VERCEL_URL` is used until you set this to your custom domain. A **production** build without either explicit URL or `VERCEL_URL` falls back to localhost (see server warnings). |
 | `AMAZON_ASSOCIATE_TAG` | Recommended for revenue | Amazon `tag=` on outbound URLs before `/out` (see `src/lib/affiliate.ts`). |
 | `CRON_SECRET` | Recommended in prod | Protects manual hits to `/api/cron/run` (Bearer token); Vercel cron also sends `x-vercel-cron`. |
 | `ADMIN_USERNAME` | Yes for admin | With `ADMIN_PASSWORD`, enables **HTTP Basic Auth** on `/admin/*` and `/api/admin/*` via middleware. |
@@ -54,7 +54,7 @@ Set `ADMIN_USERNAME` and `ADMIN_PASSWORD` in `.env` (see `.env.example`). All re
 
 - Valid credentials → request proceeds.
 - Missing or wrong `Authorization: Basic …` → **401** and the browser login prompt.
-- If either admin variable is **unset** → **403** (admin disabled until configured).
+- If either admin variable is **unset** → **401** with a plain-text hint (configure env before using Basic auth).
 
 Scripted or CI calls to admin APIs must send the header, for example:
 

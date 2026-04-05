@@ -14,9 +14,11 @@ export const metadata = siteMetadata({
 
 export default async function DealsPage() {
   const { deals, source } = await getDeals({});
-  const categories = getCategories();
-  const brands = getBrands();
-  const stores = getStores();
+  const [categories, brands, stores] = await Promise.all([
+    getCategories(),
+    getBrands(),
+    getStores(),
+  ]);
 
   return (
     <div className="mx-auto max-w-6xl px-4 py-10 sm:px-6">
