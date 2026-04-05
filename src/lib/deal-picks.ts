@@ -1,6 +1,7 @@
 import { isPriceContextIncomplete } from "@/lib/deal-mock-extras";
 import { isPrimaryShelfAmazonDeal } from "@/lib/deal-shelf-eligibility";
 import { sortDealsForHub } from "@/lib/deal-sorting";
+import { isPlaceholderProductImage } from "@/lib/product-image";
 import type { DealProduct } from "@/types/deal";
 
 function withoutIds(
@@ -23,6 +24,7 @@ export function pickFeaturedRail(deals: DealProduct[], limit: number): DealProdu
  * Excludes incomplete price context (no list/discount signal), non-Amazon-DP URLs,
  * and URLs containing `example` (see `isPrimaryShelfAmazonDeal`). Shows fewer than
  * `max` when pins are missing — no algorithmic filler. See AGENTS.md.
+ * Omits placeholder-only art so the first row prefers real cached images (may show fewer than max).
  */
 export function pickHomepageFeaturedManualOnly(
   deals: DealProduct[],
@@ -34,6 +36,7 @@ export function pickHomepageFeaturedManualOnly(
       !d.excludeFromHubs &&
       !isPriceContextIncomplete(d) &&
       isPrimaryShelfAmazonDeal(d) &&
+      !isPlaceholderProductImage(d.imageUrl) &&
       d.homepageRank != null &&
       Number.isFinite(d.homepageRank)
   );

@@ -2,6 +2,19 @@
 
 export const PRODUCT_IMAGE_PLACEHOLDER = "/product-images/placeholder.jpg";
 
+/** True when the row has no real cached art (empty URL or explicit placeholder path). */
+export function isPlaceholderProductImage(
+  imageUrl: string | null | undefined
+): boolean {
+  const t = imageUrl?.trim() ?? "";
+  if (!t) return true;
+  const pathOnly = t.split("?")[0] ?? t;
+  return (
+    pathOnly === PRODUCT_IMAGE_PLACEHOLDER ||
+    pathOnly.endsWith("/placeholder.jpg")
+  );
+}
+
 export function localProductImagePath(asin: string): string {
   return `/product-images/${encodeURIComponent(asin)}.jpg`;
 }

@@ -1,4 +1,5 @@
 import { isPrimaryShelfAmazonDeal } from "@/lib/deal-shelf-eligibility";
+import { isPlaceholderProductImage } from "@/lib/product-image";
 import type { DealProduct } from "@/types/deal";
 
 /** Hub / rail ordering context — maps to `homepageRank` | `bestDealsRank` | `top10Rank`. */
@@ -28,6 +29,13 @@ function compareHub(
   mode: HubRankMode,
   tieBreak: "ai_score" | "newest"
 ): number {
+  if (mode === "best_deals") {
+    const aPh = isPlaceholderProductImage(a.imageUrl);
+    const bPh = isPlaceholderProductImage(b.imageUrl);
+    if (!aPh && bPh) return -1;
+    if (aPh && !bPh) return 1;
+  }
+
   const ar = rankFor(a, mode);
   const br = rankFor(b, mode);
   if (ar != null && br != null && ar !== br) return ar - br;
