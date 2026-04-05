@@ -60,8 +60,7 @@ export function DealRecentlyViewed({
             <Link href={`/deals/${d.slug}`} className="block">
               <div className="relative aspect-square w-full bg-neutral-100">
                 <AmazonShelfImage
-                  primary={d.imageUrl}
-                  productUrl={d.productUrl}
+                  src={d.imageUrl}
                   className="absolute inset-0 h-full w-full object-cover"
                 />
               </div>

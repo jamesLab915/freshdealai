@@ -2,56 +2,55 @@
 
 import { useCallback, useEffect, useState } from "react";
 
-import { amazonAsinFromProductUrl, getAmazonImage } from "@/lib/amazon-media";
+import {
+  PRODUCT_IMAGE_PLACEHOLDER,
+  resolveProductImageSrc,
+} from "@/lib/product-image";
 
 type Props = {
-  primary: string | null;
-  productUrl: string;
+  /** `products.image_url` — prefer site-relative `/product-images/...` */
+  src: string | null | undefined;
   alt?: string;
   className?: string;
 };
 
 /**
- * Product hero image with Amazon widget CDN fallback when the stored URL 404s.
+ * Renders product art from DB only; empty → placeholder. No Amazon hotlinks.
  */
-export function AmazonShelfImage({ primary, productUrl, alt = "", className }: Props) {
-  const asin = amazonAsinFromProductUrl(productUrl);
-  const fallback = asin ? getAmazonImage(asin) : null;
-
-  const [src, setSrc] = useState<string | null>(() => {
-    const p = primary?.trim();
-    if (p) return p;
-    return fallback ?? null;
-  });
-  const [triedFallback, setTriedFallback] = useState(false);
+export function AmazonShelfImage({ src, alt = "", className }: Props) {
+  const [current, setCurrent] = useState(() => resolveProductImageSrc(src));
+  const [failedOnce, setFailedOnce] = useState(false);
+  const [broken, setBroken] = useState(false);
 
   useEffect(() => {
-    const p = primary?.trim();
-    setSrc(p || fallback || null);
-    setTriedFallback(false);
-  }, [primary, fallback]);
+    setFailedOnce(false);
+    setBroken(false);
+    setCurrent(resolveProductImageSrc(src));
+  }, [src]);
 
   const onError = useCallback(() => {
-    if (!triedFallback && fallback && src !== fallback) {
-      setTriedFallback(true);
-      setSrc(fallback);
+    if (!failedOnce) {
+      setFailedOnce(true);
+      setCurrent(PRODUCT_IMAGE_PLACEHOLDER);
       return;
     }
-    setSrc(null);
-  }, [triedFallback, fallback, src]);
+    setBroken(true);
+  }, [failedOnce]);
 
-  if (!src) {
+  if (broken) {
     return (
-      <div className="flex h-full items-center justify-center text-sm text-neutral-400">
+      <div
+        className={`flex h-full w-full items-center justify-center bg-neutral-100 text-sm text-neutral-400 ${className ?? ""}`}
+      >
         No image
       </div>
     );
   }
 
   return (
-    // eslint-disable-next-line @next/next/no-img-element -- intentional: onError fallback for arbitrary merchant CDNs
+    // eslint-disable-next-line @next/next/no-img-element -- local / placeholder paths; avoid next/image remote config
     <img
-      src={src}
+      src={current}
       alt={alt}
       className={className}
       onError={onError}

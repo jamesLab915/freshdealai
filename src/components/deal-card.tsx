@@ -146,8 +146,7 @@ export function DealCard({ deal, engagement }: Props) {
 
         <div className="relative aspect-[4/3] w-full bg-neutral-100">
           <AmazonShelfImage
-            primary={deal.imageUrl}
-            productUrl={deal.productUrl}
+            src={deal.imageUrl}
             className="absolute inset-0 h-full w-full object-cover transition duration-300 group-hover:scale-[1.03]"
           />
           {priceDropBadge(deal.priceHistory)}

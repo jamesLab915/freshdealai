@@ -27,6 +27,7 @@ import {
 } from "@/lib/deal-mock-extras";
 import { estimateViewCount, isRecentlyUpdated } from "@/lib/deal-social-proof";
 import { categoryNameToSlug } from "@/lib/category-slug";
+import { absoluteProductImageUrlForOg } from "@/lib/product-image";
 import { getSiteUrl } from "@/lib/env";
 import { mockBrands } from "@/lib/mock-deals";
 import {
@@ -51,8 +52,10 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     320
   );
   const path = `/deals/${slug}`;
-  const url = `${getSiteUrl()}${path}`;
+  const siteUrl = getSiteUrl();
+  const url = `${siteUrl}${path}`;
   const ogTitle = deal.seoTitle ? `${deal.seoTitle}` : `${deal.title} — deal page`;
+  const ogImage = absoluteProductImageUrlForOg(deal.imageUrl, siteUrl);
   return {
     title: ogTitle,
     description,
@@ -63,13 +66,13 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       url,
       type: "website",
       siteName: "FlashDealAI",
-      images: deal.imageUrl ? [{ url: deal.imageUrl }] : undefined,
+      images: ogImage ? [{ url: ogImage }] : undefined,
     },
     twitter: {
       card: "summary_large_image",
       title: ogTitle,
       description,
-      images: deal.imageUrl ? [deal.imageUrl] : undefined,
+      images: ogImage ? [ogImage] : undefined,
     },
   };
 }
@@ -131,8 +134,7 @@ export default async function DealDetailPage({ params }: Props) {
       <div className="mt-8 grid gap-12 lg:grid-cols-2 lg:gap-14">
         <div className="relative aspect-square overflow-hidden rounded-3xl border border-neutral-200 bg-neutral-100 shadow-lg shadow-neutral-200/50">
           <AmazonShelfImage
-            primary={deal.imageUrl}
-            productUrl={deal.productUrl}
+            src={deal.imageUrl}
             className="absolute inset-0 h-full w-full object-cover"
           />
           {deal.discountPercent != null && (

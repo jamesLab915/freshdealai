@@ -4,10 +4,10 @@
  * Prices: `syntheticPriceFieldsForProductKey` (no PA-API) — stable per ASIN, list vs sale, discount > 10%.
  */
 
-import { getAmazonImage } from "@/lib/amazon-media";
 import { syntheticPriceFieldsForProductKey } from "@/lib/deals/syntheticAmazonPricing";
+import { localProductImagePath } from "@/lib/product-image";
 
-export { getAmazonImage } from "@/lib/amazon-media";
+export { localProductImagePath, PRODUCT_IMAGE_PLACEHOLDER } from "@/lib/product-image";
 
 export type FetchedDeal = {
   id: string;
@@ -31,9 +31,9 @@ export type WalmartSearchParams = {
   query: string;
 };
 
-/** Amazon product image — official widget URL only (no images-na.ssl-images-amazon.com). */
+/** Site-local path; run `npm run cache-images` to materialize files under `public/product-images/`. */
 export function amazonProductImageUrl(asin: string): string {
-  return getAmazonImage(asin);
+  return localProductImagePath(asin);
 }
 
 /** Canonical US detail URL — no ref params; affiliate tag applied in `applyAffiliateTags` at persist. */
@@ -244,7 +244,7 @@ export function applySyntheticPricingToFetchedDeal(deal: FetchedDeal): FetchedDe
   const p = syntheticPriceFieldsForProductKey(deal.id);
   const image =
     deal.source === "amazon"
-      ? (deal.image?.trim() ? deal.image : getAmazonImage(deal.id))
+      ? (deal.image?.trim() ? deal.image : localProductImagePath(deal.id))
       : deal.image;
   return {
     ...deal,
@@ -287,7 +287,7 @@ export async function fetchDeals(): Promise<FetchedDeal[]> {
         ? d
         : applySyntheticPricingToFetchedDeal(d);
     if (row.source === "amazon") {
-      const img = row.image?.trim() ? row.image : getAmazonImage(row.id);
+      const img = row.image?.trim() ? row.image : localProductImagePath(row.id);
       row = { ...row, image: img };
     }
     return row;

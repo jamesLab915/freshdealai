@@ -13,7 +13,8 @@
     "db:migrate": "prisma migrate dev",
     "db:seed": "npx tsx prisma/seed.ts",
     "deal-engine": "npx tsx scripts/runDealEngine.ts",
-    "catalog:reset": "npx tsx scripts/resetCatalogAndHomepage.ts"
+    "catalog:reset": "npx tsx scripts/resetCatalogAndHomepage.ts",
+    "cache-images": "npx tsx scripts/cacheAmazonImages.ts"
   },
   "prisma": {
     "seed": "npx tsx prisma/seed.ts"
