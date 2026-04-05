@@ -5,7 +5,19 @@ import { HomeHero } from "@/components/home/home-hero";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
-import { getBrands, getCategories, getDeals, getStores } from "@/services/deals";
+import {
+  pickAiPicksRail,
+  pickHomepageFeaturedManualOnly,
+  pickTrendingRail,
+} from "@/lib/deal-picks";
+import {
+  getBrands,
+  getCategories,
+  getDeals,
+  getEngagementStatsForProductIds,
+  getStores,
+} from "@/services/deals";
+import { isPrimaryShelfAmazonDeal } from "@/lib/deal-shelf-eligibility";
 import { mockSeoGuides } from "@/lib/mock-deals";
 import { siteMetadata } from "@/lib/site-metadata";
 
@@ -19,13 +31,27 @@ export const metadata = siteMetadata({
 
 export default async function HomePage() {
   const { deals } = await getDeals({});
-  const trending = deals.slice(0, 6);
+  const featured = pickHomepageFeaturedManualOnly(deals, 6);
+  const featuredIds = new Set(featured.map((d) => d.id));
+  const trendingNow = pickTrendingRail(deals, 4, {
+    excludeProductIds: featuredIds,
+  });
+  trendingNow.forEach((d) => featuredIds.add(d.id));
+  const aiPicks = pickAiPicksRail(deals, 4, {
+    excludeProductIds: featuredIds,
+  });
   const drops = [...deals]
+    .filter((d) => d.published && !d.excludeFromHubs)
+    .filter(isPrimaryShelfAmazonDeal)
+    .filter((d) => !featuredIds.has(d.id))
     .sort((a, b) => (b.discountPercent ?? 0) - (a.discountPercent ?? 0))
     .slice(0, 4);
-  const aiPicks = [...deals]
-    .sort((a, b) => (b.aiScore ?? 0) - (a.aiScore ?? 0))
-    .slice(0, 4);
+  const railIds = new Set<string>();
+  [...featured, ...trendingNow, ...aiPicks, ...drops].forEach((d) =>
+    railIds.add(d.id)
+  );
+  const engagementMap = await getEngagementStatsForProductIds([...railIds]);
+
   const categories = getCategories();
   const brands = getBrands();
   const stores = getStores();
@@ -43,10 +69,13 @@ export default async function HomePage() {
           <div className="mb-8 flex flex-wrap items-end justify-between gap-4">
             <div>
               <h2 className="text-2xl font-bold tracking-tight text-neutral-900 sm:text-3xl">
-                Trending deals
+                Featured Deals
               </h2>
               <p className="mt-2 max-w-xl text-sm leading-relaxed text-neutral-600 sm:text-base">
-                What shoppers are clicking right now — updated as offers change.
+                Hand-curated only: each card has a{" "}
+                <span className="font-semibold text-neutral-800">homepage rank</span> set
+                in Admin → Products. We show up to six pins — never filler from the
+                algorithm.
               </p>
             </div>
             <Link
@@ -56,9 +85,58 @@ export default async function HomePage() {
               View all deals →
             </Link>
           </div>
-          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-            {trending.map((d) => (
-              <DealCard key={d.id} deal={d} />
+          {featured.length === 0 ? (
+            <div className="rounded-2xl border border-dashed border-amber-200 bg-amber-50/80 px-6 py-10 text-center">
+              <p className="font-semibold text-amber-950">
+                No pinned deals on the homepage yet
+              </p>
+              <p className="mt-2 text-sm text-amber-900/90">
+                Set <span className="font-mono text-xs">homepage_rank</span> on up to six
+                products in Admin — we&apos;ll only show real editorial picks, never
+                auto-fill.
+              </p>
+              <Button className="mt-6" asChild>
+                <Link href="/admin/products">Open Admin · Products</Link>
+              </Button>
+            </div>
+          ) : (
+            <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+              {featured.map((d) => (
+                <DealCard
+                  key={d.id}
+                  deal={d}
+                  engagement={engagementMap.get(d.id)}
+                />
+              ))}
+            </div>
+          )}
+        </section>
+
+        <section>
+          <div className="mb-8 flex flex-wrap items-end justify-between gap-4">
+            <div>
+              <h2 className="text-2xl font-bold tracking-tight text-neutral-900 sm:text-3xl">
+                Trending Now
+              </h2>
+              <p className="mt-2 max-w-xl text-sm leading-relaxed text-neutral-600 sm:text-base">
+                Fresh listings and recent price movement — overlaps with Featured are
+                removed so this row feels distinct.
+              </p>
+            </div>
+            <Link
+              href="/deals?sort=newest"
+              className="text-sm font-semibold text-[var(--accent)] hover:underline"
+            >
+              See what&apos;s new →
+            </Link>
+          </div>
+          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+            {trendingNow.map((d) => (
+              <DealCard
+                key={`trend-${d.id}`}
+                deal={d}
+                engagement={engagementMap.get(d.id)}
+              />
             ))}
           </div>
         </section>
@@ -73,7 +151,11 @@ export default async function HomePage() {
             </p>
             <div className="mt-8 grid gap-5 sm:grid-cols-2">
               {drops.map((d) => (
-                <DealCard key={d.id} deal={d} />
+                <DealCard
+                  key={d.id}
+                  deal={d}
+                  engagement={engagementMap.get(d.id)}
+                />
               ))}
             </div>
           </div>
@@ -82,13 +164,16 @@ export default async function HomePage() {
               AI Picks
             </h2>
             <p className="mt-2 text-sm text-neutral-600">
-              Our model ranks every listing for value, trust, and momentum — not
-              sponsorships. See grouped explanations (value / trending / premium) on
-              the dedicated feed.
+              Same manual rank + flag rules as Featured, minus overlap — then our
+              model breaks ties. For grouped “why” copy, open the full feed.
             </p>
             <div className="mt-8 grid gap-5 sm:grid-cols-2">
               {aiPicks.map((d) => (
-                <DealCard key={d.id} deal={d} />
+                <DealCard
+                  key={d.id}
+                  deal={d}
+                  engagement={engagementMap.get(d.id)}
+                />
               ))}
             </div>
             <Button variant="outline" className="mt-8" size="lg" asChild>

@@ -28,6 +28,16 @@ export type DealProduct = {
   reviewCount?: number | null;
   tags: string[];
   published: boolean;
+  /** Ops flags — homepage rails */
+  featured: boolean;
+  trending: boolean;
+  aiPick: boolean;
+  /** Manual ordering: smaller = higher priority (null = not pinned). */
+  homepageRank: number | null;
+  bestDealsRank: number | null;
+  top10Rank: number | null;
+  /** Omit from hub grids / home rails (search may still show the deal). */
+  excludeFromHubs: boolean;
   seoTitle?: string | null;
   seoDescription?: string | null;
   lastSeenAt: string;

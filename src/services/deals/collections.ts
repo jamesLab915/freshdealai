@@ -1,3 +1,5 @@
+import { isPrimaryShelfAmazonDeal } from "@/lib/deal-shelf-eligibility";
+import { sortDealsForHub } from "@/lib/deal-sorting";
 import { getDeals } from "@/services/deals/getDeals";
 import type { DealFilters } from "@/services/deals/types";
 import type { DealProduct } from "@/types/deal";
@@ -57,7 +59,12 @@ export async function loadCollectionPageData(slug: string): Promise<{
   const preset = getCollectionPreset(slug);
   if (!preset) return null;
   const { deals, source } = await getDeals(preset.filters);
+  const sorted =
+    slug === "best-deals"
+      ? sortDealsForHub(deals, "best_deals")
+      : deals;
   const list =
-    preset.maxItems != null ? deals.slice(0, preset.maxItems) : deals;
-  return { preset, deals: list, source };
+    preset.maxItems != null ? sorted.slice(0, preset.maxItems) : sorted;
+  const shelf = list.filter(isPrimaryShelfAmazonDeal);
+  return { preset, deals: shelf, source };
 }

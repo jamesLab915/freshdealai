@@ -7,8 +7,14 @@ export {
 } from "@/services/deals/collections";
 export { getDeals } from "@/services/deals/getDeals";
 export {
+  getCheaperAlternatives,
+  getComparableDeals,
+  getDealById,
   getDealBySlug,
   getDealBySlugWithSource,
+  getDealEngagementStat,
+  getEngagementStatsForProductIds,
+  getMoreFromBrand,
   getRelatedDeals,
 } from "@/services/deals/getDealBySlug";
 export { searchDeals } from "@/services/deals/searchDeals";
@@ -17,5 +23,8 @@ export { getDealsForAdmin } from "@/services/deals/admin";
 
 /** Back-compat alias used in older routes */
 export { getDeals as fetchDeals } from "@/services/deals/getDeals";
-export { getDealBySlug as fetchDealBySlug } from "@/services/deals/getDealBySlug";
+export {
+  getDealById as fetchDealById,
+  getDealBySlug as fetchDealBySlug,
+} from "@/services/deals/getDealBySlug";
 export { getDealsForAdmin as fetchDealsForAdmin } from "@/services/deals/admin";

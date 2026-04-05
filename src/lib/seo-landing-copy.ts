@@ -13,6 +13,82 @@ export const bestDealsFaq = [
   },
 ];
 
+/** /best-deals hub — conversational FAQ for launch traffic. */
+export const bestDealsHubLaunchFaq = [
+  {
+    q: "Is this page pay-to-play?",
+    a: "No. Ranking comes from our scoring model plus occasional editor pins you can see in the product flags — merchants can’t buy a slot here.",
+  },
+  {
+    q: "What if the grid looks small?",
+    a: "Strict filters mean an honest shelf. We’d rather show fewer listings than filler. Browse all deals or drop your budget on the under-$ hubs.",
+  },
+  {
+    q: "How fresh are these prices?",
+    a: "Cards show a “updated” hint from our last crawl. Always confirm tax, shipping, and coupons on the retailer before you buy.",
+  },
+];
+
+export const bestDealsTodayLaunchFaq = [
+  {
+    q: "What counts as “today”?",
+    a: "We use each listing’s last-seen timestamp in our system — roughly the past 24 hours — not the retailer’s midnight.",
+  },
+  {
+    q: "Why might the list be short?",
+    a: "Quiet ingestion days happen. Use the main best-deals hub or category pages for the full scored catalog.",
+  },
+  {
+    q: "Can I trust the discount badges?",
+    a: "We normalize list price when we have it. If a card says “verify price,” we’re still reconciling numbers — check the merchant page.",
+  },
+];
+
+export const bestDealsUnder50LaunchFaq = [
+  {
+    q: "Is $50 before or after tax?",
+    a: "We filter on the indexed shelf price in USD. Sales tax and shipping show up at checkout.",
+  },
+  {
+    q: "Do Prime / membership prices count?",
+    a: "Sometimes — it depends on what the merchant exposes when we index. Re-check the live cart.",
+  },
+  {
+    q: "Looking for gifts under $50?",
+    a: "Use this grid as a starting point, then open the detail page for specs and return policies before you gift it.",
+  },
+];
+
+export const bestDealsElectronicsHubFaq = [
+  {
+    q: "Refurbished vs new?",
+    a: "When the source states condition, it stays in the title or tags. If it doesn’t say refurbished, assume new unless you see otherwise on the retailer.",
+  },
+  {
+    q: "How do you pick “best” in electronics?",
+    a: "We weigh discount credibility, review volume, seller trust, and how stable the price has looked — same AI score as the rest of the site.",
+  },
+  {
+    q: "Will this match Prime Day or Black Friday?",
+    a: "Event pricing moves hourly. This hub refreshes on a schedule — always confirm the live offer before you check out.",
+  },
+];
+
+export const top10ElectronicsLaunchFaq = [
+  {
+    q: "Why only ten?",
+    a: "It’s a deliberate shortlist: easier to scan on mobile and better for sharing. Jump to the category hub if you want the full shelf.",
+  },
+  {
+    q: "How often does the order change?",
+    a: "Whenever ingestion refreshes prices and scores. The numbered slots aren’t locked for the week.",
+  },
+  {
+    q: "Are these the cheapest electronics on the internet?",
+    a: "Not necessarily — they’re the ten we’d stand behind on value and risk today. Compare specs and warranty on the product page.",
+  },
+];
+
 export const under50Faq = [
   {
     q: "What does “under $50” include?",

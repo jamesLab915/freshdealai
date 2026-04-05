@@ -2,6 +2,7 @@ import type { Prisma, Product } from "@/generated/prisma/client";
 import { prisma } from "@/lib/prisma";
 import {
   getMockAllDealsForAdmin,
+  getMockDealById,
   getMockDealBySlug,
   getMockPublishedDeals,
   mockBrands,
@@ -50,6 +51,13 @@ export function mapProductToDeal(p: ProductWithHistory): DealProduct {
     reviewCount: p.reviewCount,
     tags: p.tags ?? [],
     published: p.published,
+    featured: p.featured,
+    trending: p.trending,
+    aiPick: p.aiPick,
+    homepageRank: p.homepageRank ?? null,
+    bestDealsRank: p.bestDealsRank ?? null,
+    top10Rank: p.top10Rank ?? null,
+    excludeFromHubs: p.excludeFromHubs,
     seoTitle: p.seoTitle,
     seoDescription: p.seoDescription,
     lastSeenAt: p.lastSeenAt.toISOString(),
@@ -271,6 +279,23 @@ export async function loadDealBySlug(slug: string): Promise<DealProduct | null> 
   return deal;
 }
 
+export async function loadDealById(id: string): Promise<DealProduct | null> {
+  if (prisma) {
+    try {
+      const p = await prisma.product.findFirst({
+        where: { id, published: true },
+        include: {
+          priceHistory: { orderBy: { capturedAt: "desc" }, take: 14 },
+        },
+      });
+      if (p) return mapProductToDeal(p);
+    } catch {
+      /* mock */
+    }
+  }
+  return getMockDealById(id) ?? null;
+}
+
 export async function loadAllDealsForAdmin(): Promise<DealProduct[]> {
   if (prisma) {
     try {
@@ -308,4 +333,107 @@ export async function loadRelatedDeals(
   }
   const { deals } = await loadDeals({ sort: "ai_score" });
   return deals.filter((d) => d.slug !== excludeSlug).slice(0, limit);
+}
+
+function brandNameToSlug(name: string): string {
+  const b = mockBrands.find(
+    (x) => x.name.toLowerCase() === name.toLowerCase()
+  );
+  if (b) return b.slug;
+  return name
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-|-$/g, "");
+}
+
+/** Same category, strictly lower price — for “cheaper alternatives”. */
+export async function loadCheaperAlternatives(
+  excludeSlug: string,
+  categoryName: string | null,
+  currentPrice: number,
+  limit = 4
+): Promise<DealProduct[]> {
+  if (!categoryName) return [];
+  const slug = categoryNameToSlug(categoryName);
+  const maxPrice = Math.max(0, currentPrice - 0.01);
+  if (maxPrice <= 0) return [];
+  const { deals } = await loadDeals({
+    category: slug,
+    sort: "ai_score",
+    maxPrice,
+  });
+  return deals.filter((d) => d.slug !== excludeSlug).slice(0, limit);
+}
+
+export async function loadMoreFromBrand(
+  excludeSlug: string,
+  brandName: string | null,
+  limit = 4
+): Promise<DealProduct[]> {
+  if (!brandName?.trim()) return [];
+  const slug = brandNameToSlug(brandName.trim());
+  const { deals } = await loadDeals({ brand: slug, sort: "ai_score" });
+  return deals.filter((d) => d.slug !== excludeSlug).slice(0, limit);
+}
+
+/** Same category, similar shelf price — for “comparable products”. */
+export async function loadComparableDeals(
+  excludeSlug: string,
+  categoryName: string | null,
+  currentPrice: number,
+  limit = 4
+): Promise<DealProduct[]> {
+  if (!categoryName || currentPrice <= 0) return [];
+  const slug = categoryNameToSlug(categoryName);
+  const lo = currentPrice * 0.65;
+  const hi = currentPrice * 1.45;
+  const { deals } = await loadDeals({ category: slug, sort: "ai_score" });
+  return deals
+    .filter(
+      (d) =>
+        d.slug !== excludeSlug &&
+        d.currentPrice >= lo &&
+        d.currentPrice <= hi
+    )
+    .slice(0, limit);
+}
+
+export async function loadEngagementStatForProduct(
+  productId: string
+): Promise<{ affiliateClicks: number; detailViews: number } | null> {
+  if (!prisma) return null;
+  try {
+    const row = await prisma.dealEngagementStat.findUnique({
+      where: { productId },
+    });
+    if (!row) return null;
+    return {
+      affiliateClicks: row.affiliateClicks,
+      detailViews: row.detailViews,
+    };
+  } catch {
+    return null;
+  }
+}
+
+export async function loadEngagementStatsForProductIds(
+  productIds: string[]
+): Promise<Map<string, { affiliateClicks: number; detailViews: number }>> {
+  const map = new Map<string, { affiliateClicks: number; detailViews: number }>();
+  if (!prisma || productIds.length === 0) return map;
+  const unique = [...new Set(productIds)];
+  try {
+    const rows = await prisma.dealEngagementStat.findMany({
+      where: { productId: { in: unique } },
+    });
+    for (const row of rows) {
+      map.set(row.productId, {
+        affiliateClicks: row.affiliateClicks,
+        detailViews: row.detailViews,
+      });
+    }
+  } catch {
+    /* mock / DB down */
+  }
+  return map;
 }

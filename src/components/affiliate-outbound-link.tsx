@@ -2,7 +2,7 @@
 
 import { cn } from "@/lib/utils";
 import {
-  buildOutboundPath,
+  buildMonetizedOutboundPath,
   recordAffiliateClick,
   type AffiliateClickPayload,
 } from "@/lib/affiliate";
@@ -24,7 +24,7 @@ export function AffiliateOutboundLink({
   className,
   children,
 }: Props) {
-  const href = buildOutboundPath(absoluteUrl);
+  const href = buildMonetizedOutboundPath(absoluteUrl, dealId);
   return (
     <a
       href={href}

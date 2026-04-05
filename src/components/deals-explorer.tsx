@@ -47,6 +47,8 @@ export function DealsExplorer({
   const category = params.get("category") ?? "";
   const minDisc = params.get("minDisc") ?? "";
   const maxDisc = params.get("maxDisc") ?? "";
+  const minPrice = params.get("minPrice") ?? "";
+  const maxPrice = params.get("maxPrice") ?? "";
   const minAi = params.get("minAi") ?? "";
   const sort = params.get("sort") ?? "ai_score";
 
@@ -90,6 +92,8 @@ export function DealsExplorer({
     category,
     minDisc,
     maxDisc,
+    minPrice,
+    maxPrice,
     minAi,
     sort,
   };
@@ -141,6 +145,18 @@ export function DealsExplorer({
         list = list.filter((d) => (d.aiScore ?? 0) >= n);
       }
     }
+    if (minPrice) {
+      const n = Number(minPrice);
+      if (!Number.isNaN(n)) {
+        list = list.filter((d) => d.currentPrice >= n);
+      }
+    }
+    if (maxPrice) {
+      const n = Number(maxPrice);
+      if (!Number.isNaN(n)) {
+        list = list.filter((d) => d.currentPrice <= n);
+      }
+    }
     if (sort === "newest") {
       list.sort(
         (a, b) =>
@@ -164,6 +180,8 @@ export function DealsExplorer({
     category,
     minDisc,
     maxDisc,
+    minPrice,
+    maxPrice,
     minAi,
     sort,
     brands,
@@ -226,7 +244,7 @@ export function DealsExplorer({
       )}
 
       <FilterPanel
-        key={`${searchUx ? "sx" : q}-${store}-${brand}-${category}-${minDisc}-${maxDisc}-${minAi}-${sort}`}
+        key={`${searchUx ? "sx" : q}-${store}-${brand}-${category}-${minDisc}-${maxDisc}-${minPrice}-${maxPrice}-${minAi}-${sort}`}
         values={filterValues}
         onChange={setParam}
         onReset={() =>

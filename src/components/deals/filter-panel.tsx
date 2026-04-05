@@ -18,6 +18,8 @@ export type FilterValues = {
   brand: string;
   minDisc: string;
   maxDisc: string;
+  minPrice: string;
+  maxPrice: string;
   minAi: string;
   sort: string;
 };
@@ -160,6 +162,36 @@ export function FilterPanel({
               ))}
             </SelectContent>
           </Select>
+        </div>
+
+        <div>
+          <label className="mb-1.5 block text-xs font-medium text-neutral-600">
+            Min price ($)
+          </label>
+          <Input
+            type="number"
+            min={0}
+            step={1}
+            defaultValue={values.minPrice}
+            placeholder="Any"
+            className="h-10"
+            onBlur={(e) => onChange({ minPrice: e.target.value })}
+          />
+        </div>
+
+        <div>
+          <label className="mb-1.5 block text-xs font-medium text-neutral-600">
+            Max price ($)
+          </label>
+          <Input
+            type="number"
+            min={0}
+            step={1}
+            defaultValue={values.maxPrice}
+            placeholder="Any"
+            className="h-10"
+            onBlur={(e) => onChange({ maxPrice: e.target.value })}
+          />
         </div>
 
         <div>

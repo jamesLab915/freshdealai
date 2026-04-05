@@ -15,24 +15,38 @@
 ```bash
 cd flashdeal-ai
 cp .env.example .env
-# Edit .env — DATABASE_URL is optional first (site uses rich mock data)
+# Set DATABASE_URL to your Neon connection string for real data (recommended for development and ops).
 npm install
 npm run dev
 ```
 
 Open [http://localhost:3000](http://localhost:3000). For **`/admin`**, use the Basic Auth credentials from `.env` (`ADMIN_USERNAME` / `ADMIN_PASSWORD`); if they are unset, admin routes return **403** until you configure them.
 
+**Database:** Local and Vercel should both use a **Neon** (or other hosted Postgres) `DATABASE_URL`. The app falls back to **mock deals** only when `DATABASE_URL` is missing or the DB is unreachable — see `AGENTS.md` for team rules on always using Neon for real work.
+
 ### Environment variables
 
 | Variable | Required | Purpose |
 |----------|----------|---------|
-| `DATABASE_URL` | No* | PostgreSQL connection for Prisma. Without it, listings use **mock deals** (`src/lib/mock-deals.ts`). |
+| `DATABASE_URL` | Yes for real catalog | **Neon** PostgreSQL URL for Prisma. Without it, listings use **mock deals** (`src/lib/mock-deals.ts`). |
 | `OPENAI_API_KEY` | No | AI scoring, summaries, SEO. Without it, **deterministic fallbacks** run (`src/services/ai/*`). |
 | `NEXT_PUBLIC_SITE_URL` | Recommended in prod | Canonical URLs, OG, sitemap, `robots.txt`. Defaults to `http://localhost:3000` if unset. |
+| `AMAZON_ASSOCIATE_TAG` | Recommended for revenue | Amazon `tag=` on outbound URLs before `/out` (see `src/lib/affiliate.ts`). |
+| `CRON_SECRET` | Recommended in prod | Protects manual hits to `/api/cron/run` (Bearer token); Vercel cron also sends `x-vercel-cron`. |
 | `ADMIN_USERNAME` | Yes for admin | With `ADMIN_PASSWORD`, enables **HTTP Basic Auth** on `/admin/*` and `/api/admin/*` via middleware. |
 | `ADMIN_PASSWORD` | Yes for admin | Use a long random value in production. |
 
-\*Required when you want persisted products, admin DB features, and real search logs.
+### Vercel (typical production env)
+
+Set at least:
+
+- **`DATABASE_URL`** — Neon connection string (same idea as local).
+- **`NEXT_PUBLIC_SITE_URL`** — Public site URL (e.g. `https://your-domain.com`).
+- **`AMAZON_ASSOCIATE_TAG`** — Associates tag for monetized Amazon links.
+- **`CRON_SECRET`** — Protects `/api/cron/run` when not using Vercel’s cron header alone.
+- **`OPENAI_API_KEY`** — If you enable live AI (optional; app uses fallbacks without it).
+
+Add **`ADMIN_USERNAME`** / **`ADMIN_PASSWORD`** for admin UI access.
 
 ### Admin access (Basic Auth)
 
@@ -50,17 +64,17 @@ Rotate the password if it is ever exposed.
 
 See `.env.example` for optional Amazon PA API keys (ingestion status only).
 
-### PostgreSQL (production or full local demo)
+### PostgreSQL (Neon recommended)
 
-1. Create a database and set `DATABASE_URL` in `.env`.
+1. Create a **Neon** database and set **`DATABASE_URL`** in `.env` (local and Vercel).
 2. Run:
 
 ```bash
 npm run db:push
-npm run db:seed
+# Optional: npm run db:seed — only if you want the demo seed row; do not overwrite real ops data blindly.
 ```
 
-If `DATABASE_URL` is missing or the connection fails, the app **falls back to mock deals** so the storefront, collection hubs, and most APIs keep working for demos and CI.
+If `DATABASE_URL` is missing or the connection fails, the app **falls back to mock deals** so the storefront and most APIs keep working for demos and CI.
 
 ### OpenAI (optional)
 
@@ -92,7 +106,26 @@ For Postgres, use Vercel Postgres, Neon, Supabase, or any hosted Postgres; paste
 | `npm run db:push` | Push `prisma/schema.prisma` to the database |
 | `npm run db:migrate` | Create/apply migrations (`prisma migrate dev`) |
 | `npm run db:seed` | Seed a sample product (`prisma/seed.ts`) |
+| `npm run deal-engine` | Fetch sample deals → AI copy → upsert into Postgres (`scripts/runDealEngine.ts`) |
 | `npx prisma generate` | Regenerate client (also runs on `postinstall`) |
+
+### Automated deal engine (fetch → AI → DB)
+
+Persistence uses **PostgreSQL + Prisma** (not SQLite — serverless-friendly on Vercel). Tables map as **`products`** (deals) and **`categories`** (rollup counts).
+
+| Path | Role |
+|------|------|
+| `src/lib/deals/fetchDeals.ts` | Curated Amazon ASIN feed + PA-API / Walmart stubs |
+| `src/lib/ai/generateDealContent.ts` | SEO title, description, short review, tags (OpenAI or fallback) |
+| `src/lib/db.ts` | Re-exports Prisma + persistence helpers |
+| `src/lib/deal-engine/runDealEngine.ts` | Orchestrates fetch → generate → upsert (dedupe via `source` + `externalId`) |
+| `scripts/runDealEngine.ts` | CLI: `npm run deal-engine` |
+
+Cron (Vercel): **`GET /api/cron/run`** — schedule **`0 */6 * * *`** in `vercel.json`. Set **`CRON_SECRET`** and use `Authorization: Bearer <CRON_SECRET>`, or rely on Vercel’s `x-vercel-cron` header.
+
+Affiliate tags: set **`AMAZON_ASSOCIATE_TAG`** so `applyAffiliateTags` appends `tag=` on Amazon URLs before `/out` links (no placeholder tag when unset).
+
+**Routing note:** Product detail URLs stay **`/deals/[slug]`**. **`/deal/[id]`** redirects to the slug canonical. Category hubs use **`/deals/category/[slug]`** so they don’t collide with `/deals/[slug]`.
 
 ## Project layout (high level)
 

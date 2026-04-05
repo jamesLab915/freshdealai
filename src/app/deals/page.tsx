@@ -2,12 +2,15 @@ import { Suspense } from "react";
 
 import { DealGridSkeleton } from "@/components/deals/deal-card-skeleton";
 import { DealsExplorer } from "@/components/deals-explorer";
+import { siteMetadata } from "@/lib/site-metadata";
 import { getBrands, getCategories, getDeals, getStores } from "@/services/deals";
 
-export const metadata = {
-  title: "Deals",
-  description: "Search and filter live US deals with AI scores and filters.",
-};
+export const metadata = siteMetadata({
+  title: "All deals",
+  description:
+    "Search and filter live US deals — AI scores, store filters, and limited-time discounts.",
+  path: "/deals",
+});
 
 export default async function DealsPage() {
   const { deals, source } = await getDeals({});

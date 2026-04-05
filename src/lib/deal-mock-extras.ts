@@ -54,7 +54,25 @@ const CON_TEMPLATES = [
   "Peak season demand can affect stock and delivery windows.",
 ];
 
+/** Missing list price, discount, or inconsistent numbers — tone down merchandising. */
+export function isPriceContextIncomplete(deal: DealProduct): boolean {
+  const hasOrig =
+    deal.originalPrice != null &&
+    deal.originalPrice > deal.currentPrice &&
+    deal.currentPrice > 0;
+  const hasDisc =
+    deal.discountPercent != null && (deal.discountPercent ?? 0) > 0;
+  return !hasOrig || !hasDisc;
+}
+
 export function getMockPros(deal: DealProduct): string[] {
+  if (isPriceContextIncomplete(deal)) {
+    return [
+      "We’re still syncing list price and discount — confirm numbers on the merchant page.",
+      "Compare model numbers and bundle contents before you commit.",
+      "Check return windows and warranty coverage at checkout.",
+    ];
+  }
   const h = hashSeed(deal.id + "p", PRO_TEMPLATES.length);
   const line0 = deal.aiReasonToBuy?.trim()
     ? deal.aiReasonToBuy.trim().slice(0, 160) +
@@ -68,22 +86,33 @@ export function getMockPros(deal: DealProduct): string[] {
 }
 
 export function getMockCons(deal: DealProduct): string[] {
+  if (isPriceContextIncomplete(deal)) {
+    return [
+      "Discount math may update as we ingest cleaner list prices.",
+      "Third-party sellers can change offers without notice.",
+      "Verify the exact SKU and warranty on the retailer page.",
+    ];
+  }
   const h = hashSeed(deal.id + "c", CON_TEMPLATES.length);
   return [0, 1, 2].map((i) => CON_TEMPLATES[(h + i) % CON_TEMPLATES.length]);
 }
 
 /** More conversational than raw ingestion text */
 export function getShoppingRecommendationSummary(deal: DealProduct): string {
+  const incomplete = isPriceContextIncomplete(deal);
   const base =
     deal.aiSummary?.trim() ||
     `A solid pick in ${deal.category ?? "this category"} — worth comparing against similar listings before you buy.`;
+  if (incomplete) {
+    return `We’re still normalizing pricing fields on this listing — treat headline numbers as directional until you confirm at checkout. ${base}`;
+  }
   const opener =
     hashSeed(deal.id, 3) === 0
-      ? "Here's what stands out for shoppers right now: "
+      ? "Editor’s read: "
       : hashSeed(deal.id, 3) === 1
-        ? "If you're comparing options this week: "
-        : "Worth a look because ";
-  return `${opener}${base}`;
+        ? "Deal desk notes: "
+        : "Quick take: ";
+  return `${opener}${base} Compare shipping, tax, and return policy against similar SKUs before you buy.`;
 }
 
 export type WhyPickKind = "value" | "trending" | "premium";
@@ -130,4 +159,50 @@ export function getPriceInsights(deal: DealProduct): PriceInsight | null {
     isBestInHistory,
     windowLabel: "30 days",
   };
+}
+
+/** Strong editorial voice for trust block on detail page. */
+export function buildWhyWePickedStrong(deal: DealProduct): string {
+  const bits = [
+    deal.featured && "Featured",
+    deal.trending && "Trending",
+    deal.aiPick && "AI pick",
+  ].filter(Boolean);
+  const flagStr = bits.length ? ` (${bits.join(" · ")})` : "";
+  const score =
+    deal.aiScore != null
+      ? `AI score ${deal.aiScore} after discount, reviews, and seller signals.`
+      : "Strong catalog signals on discount and listing quality.";
+  const core =
+    deal.aiReasonToBuy?.trim() ||
+    deal.aiSummary?.trim() ||
+    "We only surface offers where the math and trust signals line up — not pay-to-play slots.";
+  return `This made our cut: ${score}${flagStr} ${core}`;
+}
+
+/** Plain-language paragraph for “Price history insight” (detail page). */
+export function summarizePriceHistoryInsight(
+  deal: DealProduct,
+  insight: PriceInsight | null
+): string {
+  const cur = deal.currency;
+  if (!insight) {
+    if (deal.priceHistory?.length) {
+      return `We have ${deal.priceHistory.length} recent price snapshot${deal.priceHistory.length === 1 ? "" : "s"} on file — enough to show movement, not yet a full season story. Compare the merchant cart before you commit.`;
+    }
+    return "Price history will appear here as ingestion captures more snapshots — until then, treat the headline price as a single point in time.";
+  }
+  const { bestPriceInWindow, isBestInHistory, recentDropPercent, windowLabel } =
+    insight;
+  if (isBestInHistory) {
+    return `In our ${windowLabel} window, today’s price matches the best level we’ve tracked (${cur}${bestPriceInWindow.toFixed(2)}). That’s a green light if the SKU and seller check out at checkout.`;
+  }
+  const spread = insight.currentPrice - bestPriceInWindow;
+  if (spread > 0.02) {
+    return `Over ${windowLabel}, we’ve seen this as low as ${cur}${bestPriceInWindow.toFixed(2)}. You’re at ${cur}${insight.currentPrice.toFixed(2)} now — still worth it if you need it today, or wait if you’re price-sensitive.`;
+  }
+  if (recentDropPercent != null && recentDropPercent > 0) {
+    return `Price has moved down about ${recentDropPercent}% versus older snapshots in our ${windowLabel} window — momentum is on the buyer’s side, but promos can reverse fast.`;
+  }
+  return `Tracked range in the last ${windowLabel}: low near ${cur}${bestPriceInWindow.toFixed(2)}. Current sits in a normal band — verify tax, shipping, and coupons on the retailer.`;
 }

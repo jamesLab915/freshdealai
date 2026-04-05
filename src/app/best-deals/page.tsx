@@ -1,84 +1,118 @@
 import { notFound } from "next/navigation";
 
-import { DealCard } from "@/components/deal-card";
+import { HubDealsGrid } from "@/components/seo/hub-deals-grid";
 import { FaqBlock } from "@/components/seo/faq-block";
 import { RelatedDealLinks } from "@/components/seo/related-deal-links";
-import { bestDealsFaq } from "@/lib/seo-landing-copy";
+import {
+  bestDealsHubLaunchFaq,
+} from "@/lib/seo-landing-copy";
+import { resolveHubIntro } from "@/services/ai/hubIntro";
+import { sortDealsForHub } from "@/lib/deal-sorting";
 import { siteMetadata } from "@/lib/site-metadata";
-import { loadCollectionPageData } from "@/services/deals";
+import {
+  getDeals,
+  getEngagementStatsForProductIds,
+  loadCollectionPageData,
+} from "@/services/deals";
+
+export const revalidate = 3600;
 
 export const metadata = siteMetadata({
-  title: "Best Deals Today",
+  title: "Best US deals — editor & AI-ranked daily shelf | FlashDealAI",
   description:
-    "Hand-vetted US deals ranked by AI score — discount depth, reviews, and retailer trust. Updated daily.",
+    "A curated daily grid of high-score US discounts: AI + human signals, transparent retailer links, refreshed as prices move.",
   path: "/best-deals",
+  absoluteTitle: true,
 });
 
-export default async function BestDealsTodayPage() {
+export default async function BestDealsHubPage() {
   const data = await loadCollectionPageData("best-deals");
   if (!data) notFound();
-  const { deals: grid, source, preset } = data;
+  const { source, preset, deals: initialGrid } = data;
+  let grid = initialGrid;
+  let thinNote: string | null = null;
+
+  if (grid.length === 0) {
+    const wide = await getDeals({ sort: "ai_score" });
+    grid = sortDealsForHub(wide.deals, "best_deals").slice(0, 20);
+    thinNote =
+      "Nothing cleared the strict AI≥80 bar right now — we widened to strong scored picks so this hub still helps you shop.";
+  } else if (grid.length < 4) {
+    thinNote =
+      "Editor’s note: the shelf is thin today — every card still passed our score floor.";
+  }
+
+  const sourceLabel = source === "database" ? "PostgreSQL" : "demo catalog";
+  const intro = await resolveHubIntro({
+    kind: "best-deals",
+    dealCount: grid.length,
+    sourceLabel,
+  });
+  const engagementMap = await getEngagementStatsForProductIds(
+    grid.map((d) => d.id)
+  );
 
   return (
     <div>
       <section className="border-b border-neutral-200 bg-gradient-to-r from-orange-50/90 to-white">
         <div className="mx-auto max-w-6xl px-4 py-12 sm:px-6 sm:py-16">
           <p className="text-xs font-semibold uppercase tracking-widest text-[var(--accent)]">
-            Daily hub
+            Daily editor hub
           </p>
           <h1 className="mt-3 text-3xl font-bold tracking-tight text-neutral-950 sm:text-4xl">
             {preset.label}
           </h1>
-          <p className="mt-4 max-w-2xl text-base leading-relaxed text-neutral-600">
-            A conversion-focused snapshot of what deserves attention right now — not
-            random coupons. We bias toward strong AI scores, real discount depth, and
-            listings shoppers actually click. Data:{" "}
-            <strong className="text-neutral-800">
-              {source === "database" ? "PostgreSQL" : "demo catalog"}
-            </strong>
-            .
+          <p className="mt-4 max-w-3xl text-base font-medium leading-relaxed text-neutral-800 sm:text-lg">
+            {intro}
           </p>
           <p className="mt-4 text-sm text-neutral-500">
-            Showing {grid.length} high-confidence picks (min AI score 80). Explore
-            budget hubs and brand shelves from the links below.
+            Showing {grid.length} picks
+            {grid.length > 0 ? " (min AI score 80 when the bar is active)" : ""}.
+            Explore budget ceilings and category hubs from the links below.
           </p>
         </div>
       </section>
 
       <div className="mx-auto max-w-6xl px-4 py-10 sm:px-6">
-        <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-          {grid.map((d) => (
-            <DealCard key={d.id} deal={d} />
-          ))}
-        </div>
+        <HubDealsGrid
+          deals={grid}
+          engagementByProductId={engagementMap}
+          thinShelfNote={thinNote}
+          thinThreshold={4}
+        />
 
         <RelatedDealLinks
           title="Keep hunting"
           links={[
             {
-              href: "/deals/under-50",
-              label: "Deals under $50",
-              description: "Budget-friendly picks with the same AI filters.",
+              href: "/best-deals/under/50",
+              label: "Best deals under $50",
+              description: "Same AI lens, tighter price ceiling.",
             },
             {
-              href: "/deals/electronics",
-              label: "Electronics deals",
-              description: "Laptops, audio, smart home — scored for risk and value.",
+              href: "/best-deals/today",
+              label: "Updated in the last 24h",
+              description: "Freshly seen listings with momentum.",
             },
             {
-              href: "/deals/nike",
-              label: "Nike deals",
-              description: "Footwear and apparel from Nike and partner retailers.",
+              href: "/best-deals/electronics",
+              label: "Best electronics (hub)",
+              description: "Category-focused shelf — scored, not sponsored.",
+            },
+            {
+              href: "/deals",
+              label: "All deals",
+              description: "Full browse with filters and search.",
             },
             {
               href: "/search",
-              label: "Search everything",
-              description: "Natural-style queries with live suggestions.",
+              label: "Search",
+              description: "Natural-style queries with suggestions.",
             },
           ]}
         />
 
-        <FaqBlock items={bestDealsFaq} />
+        <FaqBlock items={bestDealsHubLaunchFaq} />
       </div>
     </div>
   );

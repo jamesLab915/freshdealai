@@ -6,6 +6,48 @@ export function buildOutboundPath(absoluteUrl: string): string {
 }
 
 /**
+ * Append affiliate parameters before exit tracking (Amazon Associates tag, etc.).
+ */
+export function applyAffiliateTags(absoluteUrl: string): string {
+  try {
+    const u = new URL(absoluteUrl);
+    const host = u.hostname.toLowerCase().replace(/^www\./, "");
+
+    if (host.includes("amazon.") || host === "a.co" || host.includes("amzn.")) {
+      const tag = process.env.AMAZON_ASSOCIATE_TAG?.trim();
+      if (tag) {
+        u.searchParams.set("tag", tag);
+      }
+      return u.toString();
+    }
+
+    if (host.includes("walmart.com")) {
+      const w = process.env.WALMART_AFFILIATE_PARAM?.trim();
+      if (w) {
+        const [k, v] = w.split("=");
+        if (k && v) u.searchParams.set(k, v);
+      }
+      return u.toString();
+    }
+  } catch {
+    return absoluteUrl;
+  }
+  return absoluteUrl;
+}
+
+/** Applies retailer tags, then wraps in `/out` for analytics-safe redirects. */
+export function buildMonetizedOutboundPath(
+  absoluteUrl: string,
+  dealId?: string
+): string {
+  const u = applyAffiliateTags(absoluteUrl);
+  const base = buildOutboundPath(u);
+  if (!dealId?.trim()) return base;
+  const sep = base.includes("?") ? "&" : "?";
+  return `${base}${sep}deal=${encodeURIComponent(dealId.trim())}`;
+}
+
+/**
  * Resolved monetization URL: dedicated `affiliate_url` when present, else `product_url`.
  * All user-facing CTAs must use this (never raw product link alone when affiliate exists).
  */

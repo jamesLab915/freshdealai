@@ -1,6 +1,7 @@
 import Link from "next/link";
 
 import { CsvImportPanel } from "@/components/admin/csv-import-panel";
+import { DealEngineRunButton } from "@/components/admin/deal-engine-run-button";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { getIngestionSourceLine } from "@/lib/ingestion-health";
@@ -101,7 +102,8 @@ export default async function AdminIngestionPage({ searchParams }: Props) {
         />
       </div>
 
-      <div className="mt-10">
+      <div className="mt-10 space-y-8">
+        <DealEngineRunButton />
         <CsvImportPanel />
       </div>
 

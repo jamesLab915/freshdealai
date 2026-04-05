@@ -8,8 +8,26 @@ import type {
 } from "@/types/deal";
 
 /** Raw mock rows — `affiliateUrl` may be null; normalized via `mockDeals`. */
-type MockDealRow = Omit<DealProduct, "affiliateUrl" | "usesProductUrlFallback"> & {
+type MockDealRow = Omit<
+  DealProduct,
+  | "affiliateUrl"
+  | "usesProductUrlFallback"
+  | "featured"
+  | "trending"
+  | "aiPick"
+  | "homepageRank"
+  | "bestDealsRank"
+  | "top10Rank"
+  | "excludeFromHubs"
+> & {
   affiliateUrl: string | null;
+  featured?: boolean;
+  trending?: boolean;
+  aiPick?: boolean;
+  homepageRank?: number | null;
+  bestDealsRank?: number | null;
+  top10Rank?: number | null;
+  excludeFromHubs?: boolean;
 };
 
 const now = new Date().toISOString();
@@ -100,6 +118,10 @@ const mockDealsRaw: MockDealRow[] = [
     reviewCount: 12400,
     tags: ["headphones", "travel", "ANC"],
     published: true,
+    featured: true,
+    trending: true,
+    aiPick: true,
+    homepageRank: 1,
     seoTitle: "Sony WH-1000XM5 deal — lowest price this month",
     seoDescription: "Compare today’s Sony WH-1000XM5 discount with 30-day price history.",
     lastSeenAt: now,
@@ -131,6 +153,8 @@ const mockDealsRaw: MockDealRow[] = [
     reviewCount: 56000,
     tags: ["apple", "earbuds", "usb-c"],
     published: true,
+    trending: true,
+    homepageRank: 2,
     lastSeenAt: now,
     priceHistory: hist(220, [28, 20, 12, 5, 2]),
   },
@@ -160,6 +184,8 @@ const mockDealsRaw: MockDealRow[] = [
     reviewCount: 4200,
     tags: ["vacuum", "pets", "cordless"],
     published: true,
+    aiPick: true,
+    homepageRank: 3,
     lastSeenAt: now,
     priceHistory: hist(680, [45, 30, 14, 7]),
   },
@@ -189,6 +215,7 @@ const mockDealsRaw: MockDealRow[] = [
     reviewCount: 890,
     tags: ["running", "clearance", "men"],
     published: true,
+    homepageRank: 4,
     lastSeenAt: now,
     priceHistory: hist(125, [60, 45, 30, 14, 7]),
   },
@@ -218,6 +245,7 @@ const mockDealsRaw: MockDealRow[] = [
     reviewCount: 15200,
     tags: ["baking", "mixer", "gift"],
     published: true,
+    homepageRank: 5,
     lastSeenAt: now,
     priceHistory: hist(410, [90, 60, 30, 14]),
   },
@@ -247,6 +275,7 @@ const mockDealsRaw: MockDealRow[] = [
     reviewCount: 3100,
     tags: ["gps", "running", "music"],
     published: true,
+    homepageRank: 6,
     lastSeenAt: now,
     priceHistory: hist(360, [40, 28, 14, 7, 3]),
   },
@@ -704,6 +733,13 @@ const mockDealsRaw: MockDealRow[] = [
 function normalizeMockDeal(row: MockDealRow): DealProduct {
   return {
     ...row,
+    featured: row.featured ?? false,
+    trending: row.trending ?? false,
+    aiPick: row.aiPick ?? false,
+    homepageRank: row.homepageRank ?? null,
+    bestDealsRank: row.bestDealsRank ?? null,
+    top10Rank: row.top10Rank ?? null,
+    excludeFromHubs: row.excludeFromHubs ?? false,
     affiliateUrl: resolveAffiliateUrl(row),
     usesProductUrlFallback: !row.affiliateUrl?.trim(),
   };
@@ -735,6 +771,10 @@ export function getMockPublishedDeals(): DealProduct[] {
 
 export function getMockDealBySlug(slug: string): DealProduct | undefined {
   return mockDeals.find((d) => d.slug === slug && d.published);
+}
+
+export function getMockDealById(id: string): DealProduct | undefined {
+  return mockDeals.find((d) => d.id === id && d.published);
 }
 
 export function getMockAllDealsForAdmin(): DealProduct[] {

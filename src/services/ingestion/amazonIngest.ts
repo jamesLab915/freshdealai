@@ -1,4 +1,5 @@
 import { ProductSource } from "@/generated/prisma/enums";
+import { applyAffiliateTags } from "@/lib/affiliate";
 import type { RawProductRecord } from "@/services/ingestion/normalizeProductRecord";
 
 export type AmazonPaSearchParams = {
@@ -37,6 +38,6 @@ export function mapAmazonItemToRaw(item: {
     currency: item.currency ?? "USD",
     current_price: item.priceAmount ?? 0,
     original_price: item.listPriceAmount ?? null,
-    affiliate_url: `${item.detailPageUrl}${item.detailPageUrl.includes("?") ? "&" : "?"}tag=flashdealai-20`,
+    affiliate_url: applyAffiliateTags(item.detailPageUrl),
   };
 }
