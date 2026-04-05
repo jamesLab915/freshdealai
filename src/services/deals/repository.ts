@@ -9,6 +9,7 @@ import {
   mockCategories,
 } from "@/lib/mock-deals";
 import { resolveAffiliateUrl } from "@/lib/affiliate";
+import { isPrimaryShelfAmazonDeal } from "@/lib/deal-shelf-eligibility";
 import { dealMatchesStore } from "@/lib/store-utils";
 import type { DealFilters, DealSort } from "@/services/deals/types";
 import type { DealProduct } from "@/types/deal";
@@ -140,6 +141,11 @@ export function applyDealFilters(
   return sortDeals([...out], f.sort);
 }
 
+/** Sitewide public shelf: real Amazon `/dp/` URLs only (see `isPrimaryShelfAmazonDeal`). */
+function filterPrimaryShelfDeals(deals: DealProduct[]): DealProduct[] {
+  return deals.filter(isPrimaryShelfAmazonDeal);
+}
+
 function storeDomainHint(slug: string): string | null {
   const m: Record<string, string> = {
     amazon: "amazon.com",
@@ -240,13 +246,15 @@ export async function loadDeals(
   try {
     const db = await fromDb(filters);
     if (db) {
-      return { deals: db, source: "database" };
+      return { deals: filterPrimaryShelfDeals(db), source: "database" };
     }
   } catch {
     /* fallback */
   }
   return {
-    deals: applyDealFilters(getMockPublishedDeals(), filters),
+    deals: filterPrimaryShelfDeals(
+      applyDealFilters(getMockPublishedDeals(), filters)
+    ),
     source: "mock",
   };
 }
@@ -265,12 +273,21 @@ export async function loadDealBySlugWithSource(
           priceHistory: { orderBy: { capturedAt: "desc" }, take: 14 },
         },
       });
-      if (p) return { deal: mapProductToDeal(p), source: "database" };
+      if (p) {
+        const deal = mapProductToDeal(p);
+        if (!isPrimaryShelfAmazonDeal(deal)) {
+          return { deal: null, source: "database" };
+        }
+        return { deal, source: "database" };
+      }
     } catch {
       /* mock */
     }
   }
   const deal = getMockDealBySlug(slug) ?? null;
+  if (deal && !isPrimaryShelfAmazonDeal(deal)) {
+    return { deal: null, source: "mock" };
+  }
   return { deal, source: "mock" };
 }
 
@@ -288,12 +305,16 @@ export async function loadDealById(id: string): Promise<DealProduct | null> {
           priceHistory: { orderBy: { capturedAt: "desc" }, take: 14 },
         },
       });
-      if (p) return mapProductToDeal(p);
+      if (p) {
+        const deal = mapProductToDeal(p);
+        return isPrimaryShelfAmazonDeal(deal) ? deal : null;
+      }
     } catch {
       /* mock */
     }
   }
-  return getMockDealById(id) ?? null;
+  const deal = getMockDealById(id) ?? null;
+  return deal && isPrimaryShelfAmazonDeal(deal) ? deal : null;
 }
 
 export async function loadAllDealsForAdmin(): Promise<DealProduct[]> {
