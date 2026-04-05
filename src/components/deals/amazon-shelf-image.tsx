@@ -2,10 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 
-import {
-  amazonAsinFromProductUrl,
-  amazonWidgetImageUrl,
-} from "@/lib/amazon-media";
+import { amazonAsinFromProductUrl, getAmazonImage } from "@/lib/amazon-media";
 
 type Props = {
   primary: string | null;
@@ -19,15 +16,20 @@ type Props = {
  */
 export function AmazonShelfImage({ primary, productUrl, alt = "", className }: Props) {
   const asin = amazonAsinFromProductUrl(productUrl);
-  const fallback = asin ? amazonWidgetImageUrl(asin) : null;
+  const fallback = asin ? getAmazonImage(asin) : null;
 
-  const [src, setSrc] = useState<string | null>(primary?.trim() || null);
+  const [src, setSrc] = useState<string | null>(() => {
+    const p = primary?.trim();
+    if (p) return p;
+    return fallback ?? null;
+  });
   const [triedFallback, setTriedFallback] = useState(false);
 
   useEffect(() => {
-    setSrc(primary?.trim() || null);
+    const p = primary?.trim();
+    setSrc(p || fallback || null);
     setTriedFallback(false);
-  }, [primary]);
+  }, [primary, fallback]);
 
   const onError = useCallback(() => {
     if (!triedFallback && fallback && src !== fallback) {

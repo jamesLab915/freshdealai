@@ -4,8 +4,10 @@
  * Prices: `syntheticPriceFieldsForProductKey` (no PA-API) — stable per ASIN, list vs sale, discount > 10%.
  */
 
-import { amazonWidgetImageUrl } from "@/lib/amazon-media";
+import { getAmazonImage } from "@/lib/amazon-media";
 import { syntheticPriceFieldsForProductKey } from "@/lib/deals/syntheticAmazonPricing";
+
+export { getAmazonImage } from "@/lib/amazon-media";
 
 export type FetchedDeal = {
   id: string;
@@ -29,9 +31,9 @@ export type WalmartSearchParams = {
   query: string;
 };
 
-/** Official Amazon product image — uses Associates widget URL (redirects to CDN; fewer 404s than raw P/ASIN). */
+/** Amazon product image — official widget URL only (no images-na.ssl-images-amazon.com). */
 export function amazonProductImageUrl(asin: string): string {
-  return amazonWidgetImageUrl(asin);
+  return getAmazonImage(asin);
 }
 
 /** Canonical US detail URL — no ref params; affiliate tag applied in `applyAffiliateTags` at persist. */
@@ -240,11 +242,16 @@ function amazonCuratedCatalog(): FetchedDeal[] {
 /** Apply synthetic pricing to any fetched deal (e.g. future PA-API rows without list price). */
 export function applySyntheticPricingToFetchedDeal(deal: FetchedDeal): FetchedDeal {
   const p = syntheticPriceFieldsForProductKey(deal.id);
+  const image =
+    deal.source === "amazon"
+      ? (deal.image?.trim() ? deal.image : getAmazonImage(deal.id))
+      : deal.image;
   return {
     ...deal,
     price: p.currentPrice,
     originalPrice: p.originalPrice,
     discount: p.discountPercent,
+    image,
   };
 }
 
@@ -274,9 +281,15 @@ export async function fetchDeals(): Promise<FetchedDeal[]> {
     fetchWalmartDeals({ query: "sale" }),
   ]);
   const merged = [...curated, ...amazon, ...walmart];
-  return merged.map((d) =>
-    d.originalPrice != null && d.discount != null && d.discount > 10
-      ? d
-      : applySyntheticPricingToFetchedDeal(d)
-  );
+  return merged.map((d) => {
+    let row =
+      d.originalPrice != null && d.discount != null && d.discount > 10
+        ? d
+        : applySyntheticPricingToFetchedDeal(d);
+    if (row.source === "amazon") {
+      const img = row.image?.trim() ? row.image : getAmazonImage(row.id);
+      row = { ...row, image: img };
+    }
+    return row;
+  });
 }
