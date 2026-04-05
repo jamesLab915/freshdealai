@@ -4,6 +4,7 @@
  * Prices: `syntheticPriceFieldsForProductKey` (no PA-API) — stable per ASIN, list vs sale, discount > 10%.
  */
 
+import { amazonWidgetImageUrl } from "@/lib/amazon-media";
 import { syntheticPriceFieldsForProductKey } from "@/lib/deals/syntheticAmazonPricing";
 
 export type FetchedDeal = {
@@ -28,9 +29,9 @@ export type WalmartSearchParams = {
   query: string;
 };
 
-/** Official Amazon product image (ASIN-keyed CDN). */
+/** Official Amazon product image — uses Associates widget URL (redirects to CDN; fewer 404s than raw P/ASIN). */
 export function amazonProductImageUrl(asin: string): string {
-  return `https://images-na.ssl-images-amazon.com/images/P/${asin}.01._SCLZZZZZZZ_.jpg`;
+  return amazonWidgetImageUrl(asin);
 }
 
 /** Canonical US detail URL — no ref params; affiliate tag applied in `applyAffiliateTags` at persist. */

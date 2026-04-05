@@ -1,9 +1,9 @@
-import Image from "next/image";
 import Link from "next/link";
 import { Check, X } from "lucide-react";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 
+import { AmazonShelfImage } from "@/components/deals/amazon-shelf-image";
 import { AffiliateOutboundLink } from "@/components/affiliate-outbound-link";
 import { DealCard } from "@/components/deal-card";
 import { DealRecentlyViewed } from "@/components/deals/deal-recently-viewed";
@@ -130,20 +130,11 @@ export default async function DealDetailPage({ params }: Props) {
 
       <div className="mt-8 grid gap-12 lg:grid-cols-2 lg:gap-14">
         <div className="relative aspect-square overflow-hidden rounded-3xl border border-neutral-200 bg-neutral-100 shadow-lg shadow-neutral-200/50">
-          {deal.imageUrl ? (
-            <Image
-              src={deal.imageUrl}
-              alt=""
-              fill
-              className="object-cover"
-              priority
-              sizes="(max-width:1024px) 100vw, 50vw"
-            />
-          ) : (
-            <div className="flex h-full items-center justify-center text-neutral-400">
-              No image on file
-            </div>
-          )}
+          <AmazonShelfImage
+            primary={deal.imageUrl}
+            productUrl={deal.productUrl}
+            className="absolute inset-0 h-full w-full object-cover"
+          />
           {deal.discountPercent != null && (
             <div
               className={`absolute left-3 top-3 rounded-2xl px-4 py-2.5 shadow-2xl ring-2 ring-white/90 sm:left-4 sm:top-4 sm:px-5 sm:py-3 ${

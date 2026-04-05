@@ -1,9 +1,9 @@
-import Image from "next/image";
 import Link from "next/link";
 import { Flame } from "lucide-react";
 
 import { AffiliateOutboundLink } from "@/components/affiliate-outbound-link";
 import { DealSaveButton } from "@/components/deals/deal-save-button";
+import { AmazonShelfImage } from "@/components/deals/amazon-shelf-image";
 import { AiScoreMeter } from "@/components/deals/ai-score-meter";
 import { PriceDisplay } from "@/components/deals/price-display";
 import { Badge } from "@/components/ui/badge";
@@ -145,19 +145,11 @@ export function DealCard({ deal, engagement }: Props) {
         )}
 
         <div className="relative aspect-[4/3] w-full bg-neutral-100">
-          {deal.imageUrl ? (
-            <Image
-              src={deal.imageUrl}
-              alt=""
-              fill
-              className="object-cover transition duration-300 group-hover:scale-[1.03]"
-              sizes="(max-width:768px) 100vw, 320px"
-            />
-          ) : (
-            <div className="flex h-full items-center justify-center text-sm text-neutral-400">
-              No image
-            </div>
-          )}
+          <AmazonShelfImage
+            primary={deal.imageUrl}
+            productUrl={deal.productUrl}
+            className="absolute inset-0 h-full w-full object-cover transition duration-300 group-hover:scale-[1.03]"
+          />
           {priceDropBadge(deal.priceHistory)}
           {deal.discountPercent != null && (
             <div

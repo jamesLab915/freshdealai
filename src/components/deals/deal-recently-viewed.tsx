@@ -1,9 +1,9 @@
 "use client";
 
-import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 
+import { AmazonShelfImage } from "@/components/deals/amazon-shelf-image";
 import { getRecentSlugs } from "@/lib/deal-local-storage";
 import type { DealProduct } from "@/types/deal";
 
@@ -59,19 +59,11 @@ export function DealRecentlyViewed({
           >
             <Link href={`/deals/${d.slug}`} className="block">
               <div className="relative aspect-square w-full bg-neutral-100">
-                {d.imageUrl ? (
-                  <Image
-                    src={d.imageUrl}
-                    alt=""
-                    fill
-                    className="object-cover"
-                    sizes="160px"
-                  />
-                ) : (
-                  <div className="flex h-full items-center justify-center text-xs text-neutral-400">
-                    No image
-                  </div>
-                )}
+                <AmazonShelfImage
+                  primary={d.imageUrl}
+                  productUrl={d.productUrl}
+                  className="absolute inset-0 h-full w-full object-cover"
+                />
               </div>
               <p className="line-clamp-2 p-2 text-xs font-semibold leading-snug text-neutral-900">
                 {d.title}
