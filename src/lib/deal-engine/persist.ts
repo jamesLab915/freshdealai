@@ -4,6 +4,7 @@ import type { Product } from "@/generated/prisma/client";
 import { Prisma } from "@/generated/prisma/client";
 import { ProductSource } from "@/generated/prisma/enums";
 import type { GeneratedDealContent } from "@/lib/ai/deal-content-types";
+import { slugifyCatalogSegment } from "@/lib/catalog-dimensions";
 import { fillMissingDealCopy } from "@/services/ai/fillMissingDealCopy";
 import { applyAffiliateTags } from "@/lib/affiliate";
 import type { FetchedDeal } from "@/lib/deals/fetchDeals";
@@ -29,13 +30,6 @@ function makeSlug(title: string, externalId: string): string {
   const base = slugify(title);
   const h = createHash("sha256").update(externalId).digest("hex").slice(0, 8);
   return `${base}-${h}`.slice(0, 88);
-}
-
-function categoryNameToSlug(name: string): string {
-  return name
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-|-$/g, "");
 }
 
 async function ensureUniqueSlug(
@@ -254,7 +248,7 @@ export async function syncCategoriesFromProducts(): Promise<void> {
   for (const row of rows) {
     const name = row.category;
     if (!name) continue;
-    const slug = categoryNameToSlug(name);
+    const slug = slugifyCatalogSegment(name);
     await prisma.category.upsert({
       where: { slug },
       create: {

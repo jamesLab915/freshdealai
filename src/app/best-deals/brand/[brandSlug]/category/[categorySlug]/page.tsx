@@ -5,10 +5,9 @@ import { DealCard } from "@/components/deal-card";
 import { FaqBlock } from "@/components/seo/faq-block";
 import { sortDealsForHub } from "@/lib/deal-sorting";
 import { getSiteUrl } from "@/lib/env";
-import { mockBrands, mockCategories } from "@/lib/mock-deals";
 import { generateBrandCategoryStaticParams } from "@/lib/seo-static-params";
 import { buildBrandCategoryHubIntro } from "@/lib/seo-hub-intro";
-import { getDeals } from "@/services/deals";
+import { getBrands, getCategories, getDeals } from "@/services/deals";
 
 type Props = {
   params: Promise<{ brandSlug: string; categorySlug: string }>;
@@ -22,8 +21,12 @@ export async function generateStaticParams() {
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { brandSlug, categorySlug } = await params;
-  const b = mockBrands.find((x) => x.slug === brandSlug);
-  const c = mockCategories.find((x) => x.slug === categorySlug);
+  const [brands, categories] = await Promise.all([
+    getBrands(),
+    getCategories(),
+  ]);
+  const b = brands.find((x) => x.slug === brandSlug);
+  const c = categories.find((x) => x.slug === categorySlug);
   const brandName = b?.name ?? brandSlug.replace(/-/g, " ");
   const catName = c?.name ?? categorySlug.replace(/-/g, " ");
   const titleAbs = `Best ${brandName} ${catName} deals — AI-ranked`;
@@ -47,8 +50,12 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
 export default async function BestDealsBrandCategoryPage({ params }: Props) {
   const { brandSlug, categorySlug } = await params;
-  const b = mockBrands.find((x) => x.slug === brandSlug);
-  const c = mockCategories.find((x) => x.slug === categorySlug);
+  const [brands, categories] = await Promise.all([
+    getBrands(),
+    getCategories(),
+  ]);
+  const b = brands.find((x) => x.slug === brandSlug);
+  const c = categories.find((x) => x.slug === categorySlug);
   const brandLabel = b?.name ?? brandSlug.replace(/-/g, " ");
   const catLabel = c?.name ?? categorySlug.replace(/-/g, " ");
 

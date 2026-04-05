@@ -5,23 +5,29 @@ import type { Metadata } from "next";
 import { HubDealsGrid } from "@/components/seo/hub-deals-grid";
 import { FaqBlock } from "@/components/seo/faq-block";
 import { getSiteUrl } from "@/lib/env";
-import { mockCategories } from "@/lib/mock-deals";
+import { getCategorySlugsForStaticGeneration } from "@/lib/seo-catalog-params";
 import { sortDealsForHub } from "@/lib/deal-sorting";
 import { bestDealsElectronicsHubFaq } from "@/lib/seo-landing-copy";
 import { resolveHubIntro } from "@/services/ai/hubIntro";
-import { getDeals, getEngagementStatsForProductIds } from "@/services/deals";
+import {
+  getCategories,
+  getDeals,
+  getEngagementStatsForProductIds,
+} from "@/services/deals";
 
 type Props = { params: Promise<{ category: string }> };
 
 export const revalidate = 3600;
 
-export function generateStaticParams() {
-  return mockCategories.map((c) => ({ category: c.slug }));
+export async function generateStaticParams() {
+  const slugs = await getCategorySlugsForStaticGeneration();
+  return slugs.map((category) => ({ category }));
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { category } = await params;
-  const meta = mockCategories.find((c) => c.slug === category);
+  const categories = await getCategories();
+  const meta = categories.find((c) => c.slug === category);
   if (!meta) return { title: "Best deals" };
   const titleAbs = `${meta.name} deals we’d spotlight today | FlashDealAI`;
   const blurb = (meta.description ?? `${meta.name} on FlashDealAI`).slice(0, 120);
@@ -45,7 +51,8 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
 export default async function BestDealsCategoryPage({ params }: Props) {
   const { category } = await params;
-  const meta = mockCategories.find((c) => c.slug === category);
+  const categories = await getCategories();
+  const meta = categories.find((c) => c.slug === category);
   if (!meta) notFound();
 
   const { deals: initialDeals, source } = await getDeals({

@@ -6,13 +6,14 @@ import { DealCard } from "@/components/deal-card";
 import { HubDealsGrid } from "@/components/seo/hub-deals-grid";
 import { FaqBlock } from "@/components/seo/faq-block";
 import { getSiteUrl } from "@/lib/env";
-import { mockCategories } from "@/lib/mock-deals";
+import { getCategorySlugsForStaticGeneration } from "@/lib/seo-catalog-params";
 import { sortDealsForHub } from "@/lib/deal-sorting";
 import {
   top10ElectronicsLaunchFaq,
 } from "@/lib/seo-landing-copy";
 import { resolveHubIntro } from "@/services/ai/hubIntro";
 import {
+  getCategories,
   getDeals,
   getEngagementStatsForProductIds,
 } from "@/services/deals";
@@ -21,13 +22,15 @@ type Props = { params: Promise<{ categorySlug: string }> };
 
 export const revalidate = 3600;
 
-export function generateStaticParams() {
-  return mockCategories.map((c) => ({ categorySlug: c.slug }));
+export async function generateStaticParams() {
+  const slugs = await getCategorySlugsForStaticGeneration();
+  return slugs.map((categorySlug) => ({ categorySlug }));
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { categorySlug } = await params;
-  const meta = mockCategories.find((c) => c.slug === categorySlug);
+  const categories = await getCategories();
+  const meta = categories.find((c) => c.slug === categorySlug);
   if (!meta) return { title: "Top 10 deals" };
   const isElec = categorySlug === "electronics";
   const titleAbs = isElec
@@ -70,7 +73,8 @@ const defaultTop10Faq = (name: string) => [
 
 export default async function Top10CategoryDealsPage({ params }: Props) {
   const { categorySlug } = await params;
-  const meta = mockCategories.find((c) => c.slug === categorySlug);
+  const categories = await getCategories();
+  const meta = categories.find((c) => c.slug === categorySlug);
   if (!meta) notFound();
 
   const { deals, source } = await getDeals({

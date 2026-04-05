@@ -1,13 +1,7 @@
+import { slugifyCatalogSegment } from "@/lib/catalog-dimensions";
 import { mockBrands, mockCategories } from "@/lib/mock-deals";
 import { prisma } from "@/lib/prisma";
 import { BEST_DEALS_UNDER_PRICE_BUCKETS } from "@/lib/seo-hub-presets";
-
-function slugifyName(name: string): string {
-  return name
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-|-$/g, "");
-}
 
 export async function generateUnderPriceStaticParams(): Promise<
   { price: string }[]
@@ -36,6 +30,10 @@ export async function generateUnderPriceStaticParams(): Promise<
   }
 }
 
+/**
+ * Baseline brand×category pairs for static routes (demo grid).
+ * Async `generateBrandCategoryStaticParams` merges published DB pairs on top.
+ */
 export function generateBrandCategoryStaticParamsSync(): {
   brandSlug: string;
   categorySlug: string;
@@ -64,8 +62,8 @@ export async function generateBrandCategoryStaticParams(): Promise<
     const out = [...mock];
     for (const r of rows) {
       if (!r.brand || !r.category) continue;
-      const brandSlug = slugifyName(r.brand);
-      const categorySlug = slugifyName(r.category);
+      const brandSlug = slugifyCatalogSegment(r.brand);
+      const categorySlug = slugifyCatalogSegment(r.category);
       const key = `${brandSlug}:${categorySlug}`;
       if (seen.has(key)) continue;
       seen.add(key);

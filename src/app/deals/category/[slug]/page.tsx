@@ -11,17 +11,16 @@ import { getDeals } from "@/services/deals";
 type Props = { params: Promise<{ slug: string }> };
 
 async function getCategoryMeta(slug: string) {
-  const fromMock = mockCategories.find((c) => c.slug === slug);
-  if (fromMock) return fromMock;
-
   if (prisma) {
     try {
       const row = await prisma.category.findUnique({ where: { slug } });
       if (row) {
+        const mock = mockCategories.find((m) => m.slug === slug);
+        const desc = row.description?.trim();
         return {
           name: row.name,
           slug: row.slug,
-          description: row.description ?? `Deals in ${row.name}.`,
+          description: desc || mock?.description || `Deals in ${row.name}.`,
           dealCount: row.dealCount,
         };
       }
@@ -29,7 +28,7 @@ async function getCategoryMeta(slug: string) {
       /* ignore */
     }
   }
-  return null;
+  return mockCategories.find((c) => c.slug === slug) ?? null;
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {

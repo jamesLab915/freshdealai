@@ -4,21 +4,23 @@ import type { Metadata } from "next";
 
 import { DealCard } from "@/components/deal-card";
 import { getSiteUrl } from "@/lib/env";
-import { mockBrands } from "@/lib/mock-deals";
+import { getBrandSlugsForStaticGeneration } from "@/lib/seo-catalog-params";
 import { buildBrandDealsIntro } from "@/lib/seo-hub-intro";
-import { getDeals } from "@/services/deals";
+import { getBrands, getDeals } from "@/services/deals";
 
 type Props = { params: Promise<{ brandSlug: string }> };
 
 export const revalidate = 3600;
 
-export function generateStaticParams() {
-  return mockBrands.map((b) => ({ brandSlug: b.slug }));
+export async function generateStaticParams() {
+  const slugs = await getBrandSlugsForStaticGeneration();
+  return slugs.map((brandSlug) => ({ brandSlug }));
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { brandSlug } = await params;
-  const meta = mockBrands.find((b) => b.slug === brandSlug);
+  const brands = await getBrands();
+  const meta = brands.find((b) => b.slug === brandSlug);
   if (!meta) return { title: "Brand deals" };
   const titleAbs = `Best ${meta.name} deals — discounts & offers`;
   const description = `Shop ${meta.name} with AI-ranked deals — compare prices, read quick verdicts, and exit via transparent affiliate links.`;
@@ -41,7 +43,8 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
 export default async function BestBrandDealsPage({ params }: Props) {
   const { brandSlug } = await params;
-  const meta = mockBrands.find((b) => b.slug === brandSlug);
+  const brands = await getBrands();
+  const meta = brands.find((b) => b.slug === brandSlug);
   if (!meta) notFound();
 
   const { deals, source } = await getDeals({
