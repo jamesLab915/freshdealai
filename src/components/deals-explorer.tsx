@@ -12,6 +12,7 @@ import {
   type FilterValues,
 } from "@/components/deals/filter-panel";
 import { Button } from "@/components/ui/button";
+import { applyIntentAwareRanking } from "@/lib/search/intent-aware-ranking";
 import {
   categoryNameToSlug,
   formatSearchIntentExplanation,
@@ -140,9 +141,9 @@ export function DealsExplorer({
     ]
   );
 
-  const filtered = useMemo(() => {
+  const { filtered, rankingNote } = useMemo(() => {
     if (urlValidity.hasUnknownStructuredFilter) {
-      return [];
+      return { filtered: [] as DealProduct[], rankingNote: null as string | null };
     }
     let list = [...deals];
     if (effectiveQuery) {
@@ -197,21 +198,16 @@ export function DealsExplorer({
         list = list.filter((d) => d.currentPrice <= n);
       }
     }
-    if (sort === "newest") {
-      list.sort(
-        (a, b) =>
-          new Date(b.lastSeenAt).getTime() - new Date(a.lastSeenAt).getTime()
-      );
-    } else if (sort === "biggest_drop") {
-      list.sort(
-        (a, b) => (b.discountPercent ?? 0) - (a.discountPercent ?? 0)
-      );
-    } else if (sort === "popularity") {
-      list.sort((a, b) => (b.reviewCount ?? 0) - (a.reviewCount ?? 0));
-    } else {
-      list.sort((a, b) => (b.aiScore ?? 0) - (a.aiScore ?? 0));
-    }
-    return list;
+
+    const ranked = applyIntentAwareRanking(list, {
+      sort,
+      queryLower: effectiveQuery,
+      brandSlug: brand,
+      categorySlug: category,
+      storeSlug: store,
+    });
+
+    return { filtered: ranked.deals, rankingNote: ranked.rankingNote };
   }, [
     deals,
     effectiveQuery,
@@ -284,6 +280,11 @@ export function DealsExplorer({
           {intentExplanation && (
             <p className="mt-3 text-xs leading-relaxed text-neutral-600">
               {intentExplanation}
+            </p>
+          )}
+          {rankingNote && (
+            <p className="mt-2 text-xs leading-relaxed text-neutral-500">
+              {rankingNote}
             </p>
           )}
         </div>

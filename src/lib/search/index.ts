@@ -1,4 +1,14 @@
 export {
+  applyIntentAwareRanking,
+  detectIntentRankingKind,
+  textMatchTier,
+} from "@/lib/search/intent-aware-ranking";
+export type {
+  IntentAwareRankingInput,
+  IntentAwareRankingResult,
+  IntentRankingKind,
+} from "@/lib/search/intent-aware-ranking";
+export {
   categoryNameToSlug,
   categorySlugFromProductHints,
   extractNumericHintsFromQuery,

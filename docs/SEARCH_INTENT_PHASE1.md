@@ -29,4 +29,5 @@
 
 - Extend NL JSON schema with `store` when product wants model-extracted retailer intent.
 - Optional: hydrate `parseSearchQueryRulesWithCatalog` with live metas inside a server route for stricter API parity with the DB.
-- Intent-aware ranking only after metrics exist; keep credibility separate.
+- See also: [INTENT_AWARE_RANKING_PHASE1.md](./INTENT_AWARE_RANKING_PHASE1.md) for tie-break ranking on top of the same filters.
+
