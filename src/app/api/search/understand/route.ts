@@ -16,6 +16,7 @@ export async function POST(req: NextRequest) {
         structured: {
           brand: null,
           category: null,
+          store: null,
           maxPrice: null,
           minDiscount: null,
           intent: "browse",
@@ -32,6 +33,7 @@ export async function POST(req: NextRequest) {
     structured: {
       brand: structured.brand,
       category: structured.category,
+      store: structured.store,
       maxPrice: structured.maxPrice,
       minDiscount: structured.minDiscount,
       intent: structured.intent,

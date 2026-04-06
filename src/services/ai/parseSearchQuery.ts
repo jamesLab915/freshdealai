@@ -1,11 +1,21 @@
-import { mockBrands, mockCategories } from "@/lib/mock-deals";
+import { mockBrands, mockCategories, mockStores } from "@/lib/mock-deals";
+import {
+  categorySlugFromProductHints,
+  extractNumericHintsFromQuery,
+  matchBrandSlugFromQueryText,
+  matchCategorySlugFromQueryText,
+  matchStoreSlugFromQueryText,
+} from "@/lib/search/search-intent";
 import { AI_TASK_TIERS, runResponsesJsonWithFallback } from "@/services/ai/client";
 import { SCHEMA_SEARCH_NL } from "@/services/ai/schemas";
+import type { BrandMeta, CategoryMeta, StoreMeta } from "@/types/deal";
 
 export type SearchQueryUnderstanding = {
   brand: string | null;
   /** Category slug when mappable (e.g. `electronics`). */
   category: string | null;
+  /** Store slug when query names a retailer (aligned with `STORE_SLUG_HOSTS`). */
+  store: string | null;
   maxPrice: number | null;
   minDiscount: number | null;
   intent: string;
@@ -23,63 +33,34 @@ function empty(): SearchQueryUnderstanding {
   return {
     brand: null,
     category: null,
+    store: null,
     maxPrice: null,
     minDiscount: null,
     intent: "browse",
   };
 }
 
-/** Deterministic parse — no network; used when `OPENAI_API_KEY` is absent or the model fails. */
-export function parseSearchQueryRules(query: string): SearchQueryUnderstanding {
+/**
+ * Deterministic parse — no network; catalog-aligned brand/category/store matching.
+ * Use `parseSearchQueryRules` for default mock catalog; pass live metas from `getBrands` / `getCategories` / `getStores` when available.
+ */
+export function parseSearchQueryRulesWithCatalog(
+  query: string,
+  brands: BrandMeta[],
+  categories: CategoryMeta[],
+  stores: StoreMeta[]
+): SearchQueryUnderstanding {
   const q = query.trim().toLowerCase();
   if (!q) return empty();
 
-  let maxPrice: number | null = null;
-  const under = q.match(
-    /\b(?:under|below|less than|cheaper than)\s+\$?\s*(\d{1,6})\b/
-  );
-  if (under) maxPrice = Number(under[1]);
+  const { maxPrice, minDiscount } = extractNumericHintsFromQuery(q);
 
-  let minDiscount: number | null = null;
-  const pct = q.match(/\b(\d{1,2})\s*%\s*(?:off|discount|\+)/);
-  if (pct) minDiscount = Number(pct[1]);
-  const atLeast = q.match(/\b(?:at least|minimum)\s+(\d{1,2})\s*%/);
-  if (atLeast) minDiscount = Number(atLeast[1]);
+  const brand = matchBrandSlugFromQueryText(q, brands);
+  const categoryFromName = matchCategorySlugFromQueryText(q, categories);
+  const category =
+    categoryFromName ?? categorySlugFromProductHints(q);
 
-  let brand: string | null = null;
-  for (const b of mockBrands) {
-    const name = b.name.toLowerCase();
-    if (q.includes(name) || q.includes(b.slug.replace(/-/g, " "))) {
-      brand = b.slug;
-      break;
-    }
-  }
-
-  let category: string | null = null;
-  for (const c of mockCategories) {
-    const name = c.name.toLowerCase();
-    const slugWords = c.slug.replace(/-/g, " ");
-    if (q.includes(name) || q.includes(slugWords)) {
-      category = c.slug;
-      break;
-    }
-  }
-  const catHints: [RegExp, string][] = [
-    [/\b(laptop|chromebook|gpu|monitor|headphone|earbud|tablet|phone)\b/i, "electronics"],
-    [/\b(skincare|makeup|serum|moisturizer)\b/i, "fashion"],
-    [/\b(sneaker|shoe|apparel|jacket|jeans)\b/i, "fashion"],
-    [/\b(cookware|air fryer|blender|kitchen)\b/i, "home-kitchen"],
-    [/\b(gym|fitness|protein|wearable|watch)\b/i, "health-fitness"],
-    [/\b(camping|hiking|tent|outdoor)\b/i, "outdoor"],
-  ];
-  if (!category) {
-    for (const [re, slug] of catHints) {
-      if (re.test(q)) {
-        category = slug;
-        break;
-      }
-    }
-  }
+  const store = matchStoreSlugFromQueryText(q, stores);
 
   let intent = "browse";
   if (/\b(cheap|budget|save|discount|deal|sale|clearance)\b/.test(q)) {
@@ -89,14 +70,22 @@ export function parseSearchQueryRules(query: string): SearchQueryUnderstanding {
     intent = "deal_hunt";
   }
   if (brand) intent = "brand_focus";
+  else if (store) intent = "store_focus";
+  else if (category) intent = "category_focus";
 
   return {
     brand,
     category,
+    store,
     maxPrice,
     minDiscount,
     intent,
   };
+}
+
+/** Deterministic parse — no network; uses built-in mock catalog lists (API fallback). */
+export function parseSearchQueryRules(query: string): SearchQueryUnderstanding {
+  return parseSearchQueryRulesWithCatalog(query, mockBrands, mockCategories, mockStores);
 }
 
 function mapNlJson(raw: SearchNlJson): SearchQueryUnderstanding {
@@ -105,6 +94,7 @@ function mapNlJson(raw: SearchNlJson): SearchQueryUnderstanding {
   return {
     brand: brand || null,
     category: category || null,
+    store: null,
     maxPrice: raw.max_price > 0 && raw.max_price < 1_000_000 ? raw.max_price : null,
     minDiscount:
       raw.min_discount > 0 && raw.min_discount <= 100 ? raw.min_discount : null,

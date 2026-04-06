@@ -7,6 +7,7 @@ export { resolveHubIntro } from "@/services/ai/hubIntro";
 export {
   parseNaturalLanguageDealQuery,
   parseSearchQueryRules,
+  parseSearchQueryRulesWithCatalog,
 } from "@/services/ai/parseSearchQuery";
 export type { SearchQueryUnderstanding } from "@/services/ai/parseSearchQuery";
 export type { HubIntroKind } from "@/services/ai/hubIntro";

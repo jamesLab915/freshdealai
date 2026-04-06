@@ -12,6 +12,11 @@ import {
   type FilterValues,
 } from "@/components/deals/filter-panel";
 import { Button } from "@/components/ui/button";
+import {
+  categoryNameToSlug,
+  formatSearchIntentExplanation,
+  validateSearchUrlFilters,
+} from "@/lib/search/search-intent";
 import { dealMatchesStore } from "@/lib/store-utils";
 import { track } from "@/lib/tracking";
 import type { BrandMeta, CategoryMeta, DealProduct, StoreMeta } from "@/types/deal";
@@ -100,7 +105,45 @@ export function DealsExplorer({
 
   const effectiveQuery = (searchUx ? localQ : q).trim().toLowerCase();
 
+  const urlValidity = useMemo(
+    () => validateSearchUrlFilters(brand, category, store, brands, categories),
+    [brand, category, store, brands, categories]
+  );
+
+  const intentExplanation = useMemo(
+    () =>
+      formatSearchIntentExplanation(
+        {
+          q: searchUx ? localQ : q,
+          brandSlug: brand,
+          categorySlug: category,
+          storeSlug: store,
+          sort,
+          validity: urlValidity,
+        },
+        brands,
+        categories,
+        stores
+      ),
+    [
+      searchUx,
+      localQ,
+      q,
+      brand,
+      category,
+      store,
+      sort,
+      brands,
+      categories,
+      stores,
+      urlValidity,
+    ]
+  );
+
   const filtered = useMemo(() => {
+    if (urlValidity.hasUnknownStructuredFilter) {
+      return [];
+    }
     let list = [...deals];
     if (effectiveQuery) {
       list = list.filter(
@@ -120,11 +163,8 @@ export function DealsExplorer({
     }
     if (category) {
       list = list.filter((d) => {
-        const slug = (d.category ?? "")
-          .toLowerCase()
-          .replace(/[^a-z0-9]+/g, "-")
-          .replace(/^-|-$/g, "");
-        return slug === category;
+        if (!d.category?.trim()) return false;
+        return categoryNameToSlug(d.category) === category;
       });
     }
     if (minDisc) {
@@ -185,6 +225,7 @@ export function DealsExplorer({
     minAi,
     sort,
     brands,
+    urlValidity.hasUnknownStructuredFilter,
   ]);
 
   const suggestions = useMemo(() => {
@@ -240,6 +281,11 @@ export function DealsExplorer({
           <p className="mt-1 text-xs text-neutral-500">
             Search updates as you type (short pause before the URL syncs for sharing).
           </p>
+          {intentExplanation && (
+            <p className="mt-3 text-xs leading-relaxed text-neutral-600">
+              {intentExplanation}
+            </p>
+          )}
         </div>
       )}
 
