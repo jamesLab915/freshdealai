@@ -27,6 +27,7 @@ import {
 } from "@/lib/deal-mock-extras";
 import { estimateViewCount, isRecentlyUpdated } from "@/lib/deal-social-proof";
 import { categoryNameToSlug } from "@/lib/category-slug";
+import { deriveDealCredibilityPhase1 } from "@/lib/deal-credibility";
 import { absoluteProductImageUrlForOg } from "@/lib/product-image";
 import { getSiteUrl } from "@/lib/env";
 import { mockBrands } from "@/lib/mock-deals";
@@ -40,6 +41,7 @@ import {
   getRelatedDeals,
 } from "@/services/deals";
 import { formatDealAge, guessStoreLabel } from "@/lib/store-utils";
+import { DealCredibilityStrip } from "@/components/deals/deal-credibility-strip";
 
 type Props = { params: Promise<{ slug: string }> };
 
@@ -114,6 +116,7 @@ export default async function DealDetailPage({ params }: Props) {
   const checkedCount =
     detailViews > 0 ? detailViews : viewEstimate;
   const mayExpireSoon = isRecentlyUpdated(deal.lastSeenAt, 72);
+  const credibility = deriveDealCredibilityPhase1(deal);
   const savingsAmt =
     deal.originalPrice != null && deal.originalPrice > deal.currentPrice
       ? deal.originalPrice - deal.currentPrice
@@ -194,6 +197,10 @@ export default async function DealDetailPage({ params }: Props) {
               recommendation until the numbers reconcile.
             </p>
           )}
+
+          <div className="mt-6">
+            <DealCredibilityStrip credibility={credibility} variant="detail" />
+          </div>
 
           <div className="mt-8">
             <PriceDisplay

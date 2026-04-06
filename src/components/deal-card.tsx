@@ -2,6 +2,7 @@ import Link from "next/link";
 import { Flame } from "lucide-react";
 
 import { AffiliateOutboundLink } from "@/components/affiliate-outbound-link";
+import { DealCredibilityStrip } from "@/components/deals/deal-credibility-strip";
 import { DealSaveButton } from "@/components/deals/deal-save-button";
 import { AmazonShelfImage } from "@/components/deals/amazon-shelf-image";
 import { AiScoreMeter } from "@/components/deals/ai-score-meter";
@@ -15,6 +16,7 @@ import {
   hasPriceDropSignal,
   isRecentlyUpdated,
 } from "@/lib/deal-social-proof";
+import { deriveDealCredibilityPhase1 } from "@/lib/deal-credibility";
 import { getDealCardExtras, isPriceContextIncomplete } from "@/lib/deal-mock-extras";
 import { formatDealAge, guessStoreLabel } from "@/lib/store-utils";
 import type { DealProduct } from "@/types/deal";
@@ -44,6 +46,7 @@ type Props = {
 };
 
 export function DealCard({ deal, engagement }: Props) {
+  const credibility = deriveDealCredibilityPhase1(deal);
   const resolved = deal.affiliateUrl;
   const ctaLabel = primaryDealCtaLabel(resolved);
   const store = guessStoreLabel(deal.productUrl);
@@ -178,6 +181,8 @@ export function DealCard({ deal, engagement }: Props) {
           >
             {deal.title}
           </Link>
+
+          <DealCredibilityStrip credibility={credibility} variant="card" />
 
           {extras.urgency && !soft && !mayExpireSoon && (
             <p className="text-[11px] font-semibold text-amber-800">
