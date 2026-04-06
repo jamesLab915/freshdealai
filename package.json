@@ -16,7 +16,8 @@
     "db:seed": "npx tsx prisma/seed.ts",
     "deal-engine": "npx tsx scripts/runDealEngine.ts",
     "catalog:reset": "npx tsx scripts/resetCatalogAndHomepage.ts",
-    "cache-images": "npx tsx scripts/cacheAmazonImages.ts"
+    "cache-images": "npx tsx scripts/cacheAmazonImages.ts",
+    "credibility:samples": "npx tsx scripts/reportDealCredibilitySamples.ts"
   },
   "prisma": {
     "seed": "npx tsx prisma/seed.ts"

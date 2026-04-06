@@ -36,3 +36,59 @@ export type DealCredibilityPhase1 = {
   /** Rule set id for audits and future migrations. */
   ruleset_version: "credibility_v1_2026_04";
 };
+
+/**
+ * Phase 2 — input evidence snapshot for audits (derived from `DealProduct`, no DB columns).
+ * Stable field names for machine-readable logs; not a UI copy object.
+ */
+export type DealCredibilityEvidenceSnapshot = {
+  rating: number | null;
+  review_count: number | null;
+  current_price: number;
+  currency: string;
+  original_price: number | null;
+  discount_percent: number | null;
+  image_present: boolean;
+  image_is_placeholder: boolean;
+  store_label: string;
+  product_url: string;
+};
+
+/**
+ * Full auditable payload: Phase 1 outcome + evidence + ids + timestamp.
+ * Separate from `DealCredibilityPhase1` so UI stays on the small object only.
+ */
+export type DealCredibilityAuditV1 = {
+  schema_version: "deal_credibility_audit_v1";
+  ruleset_version: DealCredibilityPhase1["ruleset_version"];
+  deal_id: string;
+  deal_slug: string;
+  derived_at: string;
+  confidence_level: DealConfidenceLevel;
+  credibility_signals: CredibilitySignalsPhase1;
+  risk_flags: DealCredibilityRiskFlag[];
+  explanation_summary: string;
+  evidence: DealCredibilityEvidenceSnapshot;
+};
+
+/**
+ * Feed / digest / agent-oriented projection (decoupled from React components).
+ */
+export type DealCredibilityFeedItemV1 = {
+  schema_version: "deal_credibility_feed_v1";
+  ruleset_version: DealCredibilityPhase1["ruleset_version"];
+  deal_id: string;
+  slug: string;
+  title: string;
+  current_price: number;
+  currency: string;
+  discount_percent: number | null;
+  confidence_level: DealConfidenceLevel;
+  explanation_summary: string;
+  risk_flags: DealCredibilityRiskFlag[];
+  /** Catalog source (e.g. importer id). */
+  source: string;
+  store_label: string;
+  product_url: string;
+  derived_at: string;
+};

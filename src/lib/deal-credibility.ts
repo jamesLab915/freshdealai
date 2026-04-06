@@ -1,9 +1,13 @@
 import { isPriceContextIncomplete } from "@/lib/deal-mock-extras";
 import { isPlaceholderProductImage } from "@/lib/product-image";
+import { guessStoreLabel } from "@/lib/store-utils";
 import type {
   CredibilitySignalStrength,
   CredibilitySignalsPhase1,
   DealConfidenceLevel,
+  DealCredibilityAuditV1,
+  DealCredibilityEvidenceSnapshot,
+  DealCredibilityFeedItemV1,
   DealCredibilityPhase1,
   DealCredibilityRiskFlag,
 } from "@/types/deal-credibility";
@@ -174,5 +178,70 @@ export function deriveDealCredibilityPhase1(deal: DealProduct): DealCredibilityP
     risk_flags,
     explanation_summary,
     ruleset_version: "credibility_v1_2026_04",
+  };
+}
+
+/** Evidence snapshot used by audits and feed builders (no side effects). */
+export function buildDealCredibilityEvidence(
+  deal: DealProduct
+): DealCredibilityEvidenceSnapshot {
+  const url = deal.productUrl?.trim() ?? "";
+  return {
+    rating: deal.rating != null ? Number(deal.rating) : null,
+    review_count: deal.reviewCount ?? null,
+    current_price: deal.currentPrice,
+    currency: deal.currency,
+    original_price: deal.originalPrice,
+    discount_percent: deal.discountPercent,
+    image_present: Boolean(deal.imageUrl?.trim()),
+    image_is_placeholder: isPlaceholderProductImage(deal.imageUrl),
+    store_label: guessStoreLabel(url),
+    product_url: url,
+  };
+}
+
+/**
+ * Phase 1 outcome plus evidence and metadata — for human review, logging, and exports.
+ * Does not replace `deriveDealCredibilityPhase1`; reuses the same derivation internally.
+ */
+export function deriveDealCredibilityAudit(deal: DealProduct): DealCredibilityAuditV1 {
+  const phase1 = deriveDealCredibilityPhase1(deal);
+  return {
+    schema_version: "deal_credibility_audit_v1",
+    ruleset_version: phase1.ruleset_version,
+    deal_id: deal.id,
+    deal_slug: deal.slug,
+    derived_at: new Date().toISOString(),
+    confidence_level: phase1.confidence_level,
+    credibility_signals: phase1.credibility_signals,
+    risk_flags: phase1.risk_flags,
+    explanation_summary: phase1.explanation_summary,
+    evidence: buildDealCredibilityEvidence(deal),
+  };
+}
+
+/**
+ * Stable, UI-agnostic row for digest, alerts, or agent-readable pipelines.
+ */
+export function toDealCredibilityFeedItem(
+  deal: DealProduct
+): DealCredibilityFeedItemV1 {
+  const phase1 = deriveDealCredibilityPhase1(deal);
+  return {
+    schema_version: "deal_credibility_feed_v1",
+    ruleset_version: phase1.ruleset_version,
+    deal_id: deal.id,
+    slug: deal.slug,
+    title: deal.title,
+    current_price: deal.currentPrice,
+    currency: deal.currency,
+    discount_percent: deal.discountPercent,
+    confidence_level: phase1.confidence_level,
+    explanation_summary: phase1.explanation_summary,
+    risk_flags: phase1.risk_flags,
+    source: deal.source,
+    store_label: guessStoreLabel(deal.productUrl),
+    product_url: deal.productUrl?.trim() ?? "",
+    derived_at: new Date().toISOString(),
   };
 }

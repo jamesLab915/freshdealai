@@ -36,6 +36,10 @@ See `src/types/deal-credibility.ts`:
 
 Types in `src/lib/deal-credibility-future.ts` sketch **intent**, **feed**, and **audit** integration without implementing them. When you add personalization or logging, thread context through those types instead of forking ad hoc booleans.
 
+## See also
+
+- Phase 2 (audit + feed projections, sample script): [DEAL_CREDIBILITY_PHASE2.md](./DEAL_CREDIBILITY_PHASE2.md)
+
 ## Next steps (suggested)
 
 - Wire optional **audit logging** of `ruleset_version` + flags for ops review.
