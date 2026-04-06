@@ -6,6 +6,7 @@ import { DealCard } from "@/components/deal-card";
 import { getSiteUrl } from "@/lib/env";
 import { mockCategories } from "@/lib/mock-deals";
 import { prisma } from "@/lib/prisma";
+import { explainListCredibilityMix } from "@/lib/user-facing-ai-value";
 import { getDeals } from "@/services/deals";
 
 type Props = { params: Promise<{ slug: string }> };
@@ -78,6 +79,11 @@ export default async function DealsCategoryPage({ params }: Props) {
       <p className="mt-2 text-sm text-neutral-500">
         {deals.length} listing{deals.length === 1 ? "" : "s"} · Sorted by AI score
       </p>
+      {deals.length > 0 && (
+        <p className="mt-3 max-w-2xl text-sm leading-relaxed text-neutral-600">
+          {explainListCredibilityMix(deals, "category")}
+        </p>
+      )}
 
       <div className="mt-10 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
         {deals.map((d) => (

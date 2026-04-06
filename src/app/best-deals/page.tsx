@@ -7,6 +7,7 @@ import {
   bestDealsHubLaunchFaq,
 } from "@/lib/seo-landing-copy";
 import { resolveHubIntro } from "@/services/ai/hubIntro";
+import { explainListCredibilityMix } from "@/lib/user-facing-ai-value";
 import { sortDealsForHub } from "@/lib/deal-sorting";
 import { siteMetadata } from "@/lib/site-metadata";
 import {
@@ -70,6 +71,11 @@ export default async function BestDealsHubPage() {
             {grid.length > 0 ? " (min AI score 80 when the bar is active)" : ""}.
             Explore budget ceilings and category hubs from the links below.
           </p>
+          {grid.length > 0 && (
+            <p className="mt-3 max-w-3xl text-sm leading-relaxed text-neutral-600">
+              {explainListCredibilityMix(grid, "best_deals")}
+            </p>
+          )}
         </div>
       </section>
 

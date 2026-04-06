@@ -28,6 +28,7 @@ import {
 import { estimateViewCount, isRecentlyUpdated } from "@/lib/deal-social-proof";
 import { categoryNameToSlug } from "@/lib/category-slug";
 import { deriveDealCredibilityPhase1 } from "@/lib/deal-credibility";
+import { explainCredibilityBasisLine } from "@/lib/user-facing-ai-value";
 import { absoluteProductImageUrlForOg } from "@/lib/product-image";
 import { getSiteUrl } from "@/lib/env";
 import { mockBrands } from "@/lib/mock-deals";
@@ -200,6 +201,9 @@ export default async function DealDetailPage({ params }: Props) {
 
           <div className="mt-6">
             <DealCredibilityStrip credibility={credibility} variant="detail" />
+            <p className="mt-3 text-xs leading-relaxed text-neutral-500">
+              {explainCredibilityBasisLine(deal)}
+            </p>
           </div>
 
           <div className="mt-8">

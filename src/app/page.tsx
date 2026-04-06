@@ -17,6 +17,7 @@ import {
   getEngagementStatsForProductIds,
   getStores,
 } from "@/services/deals";
+import { explainFeaturedCredibilityMix } from "@/lib/user-facing-ai-value";
 import { isPrimaryShelfAmazonDeal } from "@/lib/deal-shelf-eligibility";
 import { mockSeoGuides } from "@/lib/mock-deals";
 import { siteMetadata } from "@/lib/site-metadata";
@@ -79,6 +80,11 @@ export default async function HomePage() {
                 in Admin → Products. We show up to six pins — never filler from the
                 algorithm.
               </p>
+              {featured.length > 0 && (
+                <p className="mt-3 max-w-xl text-sm leading-relaxed text-neutral-600">
+                  {explainFeaturedCredibilityMix(featured)}
+                </p>
+              )}
             </div>
             <Link
               href="/deals"
